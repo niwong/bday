@@ -8,6 +8,11 @@ const App = () => {
   const [currentMode, setCurrentMode] = useState('car'); // 'olympics', 'fantasy', 'car'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
+  const [showGame1Popup, setShowGame1Popup] = useState(false);
+  const [showGame2Popup, setShowGame2Popup] = useState(false);
+  const [showGame3Popup, setShowGame3Popup] = useState(false);
+  const [showGame4Popup, setShowGame4Popup] = useState(false);
+  const [showGame5Popup, setShowGame5Popup] = useState(false);
 
   // Memoized data generation to prevent refresh on mode changes
   const teamData = useMemo(() => {
@@ -145,6 +150,153 @@ const App = () => {
           </div>
         </div>
       )}
+
+      {/* Game 1 Popup */}
+      {showGame1Popup && (
+        <div className="game1-popup-overlay">
+          <div className="game1-popup">
+            <div className="game1-content">
+              <div className="game1-volleyball-image">
+                <img src="/images/volleyball.png" alt="Volleyball player" className="volleyball-image" />
+              </div>
+              <div className="game1-text">
+                <p className="game1-title">Game 1: Volleyball</p>
+                <p className="game1-description">
+                  I never would've expected this sport to be such a big part 
+                  of my adult life. But alas. Here we are. I just love it
+                  so much.
+                </p>
+                <p className="game1-description">
+                  The first game is a volleyball themed activity. It should
+                  be hard enough that even the vb players in the team
+                  will struggle.
+                </p>
+                <p className="game1-description">
+                  Maybe we should drink...
+                </p>
+                <button 
+                  className="game1-close-button"
+                  onClick={() => setShowGame1Popup(false)}
+                >
+                  acknowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Game 2 Popup */}
+      {showGame2Popup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="game-image">
+                <img src="/images/red-pot.png" alt="Red pot" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">Game 2: Pasta</p>
+                <p className="game-description">
+                  Placeholder text for Game 2. This will be updated with the actual game description.
+                </p>
+                <p className="game-description">
+                  More placeholder content will go here.
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowGame2Popup(false)}
+                >
+                  acknowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Game 3 Popup */}
+      {showGame3Popup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="game-image">
+                <img src="/images/placeholder.png" alt="Game 3 placeholder" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">Game 3: Chess</p>
+                <p className="game-description">
+                  Placeholder text for Game 3. This will be updated with the actual game description.
+                </p>
+                <p className="game-description">
+                  More placeholder content will go here.
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowGame3Popup(false)}
+                >
+                  acknowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Game 4 Popup */}
+      {showGame4Popup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="game-image">
+                <img src="/images/placeholder.png" alt="Game 4 placeholder" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">Game 4: Coffee</p>
+                <p className="game-description">
+                  Placeholder text for Game 4. This will be updated with the actual game description.
+                </p>
+                <p className="game-description">
+                  More placeholder content will go here.
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowGame4Popup(false)}
+                >
+                  acknowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Game 5 Popup */}
+      {showGame5Popup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="game-image">
+                <img src="/images/placeholder.png" alt="Game 5 placeholder" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">Game 5: Olympics</p>
+                <p className="game-description">
+                  Placeholder text for Game 5. This will be updated with the actual game description.
+                </p>
+                <p className="game-description">
+                  More placeholder content will go here.
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowGame5Popup(false)}
+                >
+                  acknowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <header className="app-header">
         <h1>{currentMode === 'fantasy' ? 'Fantasy Draft' : "Nicholas' Bday Olympics"}</h1>
@@ -204,11 +356,29 @@ const App = () => {
           <div className="dashboard-container">
             {/* Row titles on the left */}
             <div className="row-titles">
-              {rowTitles.map((title, index) => (
-                <div key={index} className="row-title">
-                  {title}
-                </div>
-              ))}
+              {rowTitles.map((title, index) => {
+                const handleClick = () => {
+                  switch(index) {
+                    case 0: setShowGame1Popup(true); break;
+                    case 1: setShowGame2Popup(true); break;
+                    case 2: setShowGame3Popup(true); break;
+                    case 3: setShowGame4Popup(true); break;
+                    case 4: setShowGame5Popup(true); break;
+                    default: break;
+                  }
+                };
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="row-title"
+                    onClick={handleClick}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {title}
+                  </div>
+                );
+              })}
             </div>
             
             {/* Teams container */}

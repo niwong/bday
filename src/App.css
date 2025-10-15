@@ -121,6 +121,240 @@
   }
 }
 
+/* Game 1 Popup Styles */
+.game1-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.game1-popup {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e5e5e5;
+  overflow: visible;
+}
+
+.game1-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.game1-text {
+  padding: 2rem 2rem 2rem 4rem;
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  margin-left: 120px;
+}
+
+.game1-title {
+  color: #333333;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.game1-description {
+  color: #333333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  font-weight: 400;
+}
+
+.game1-description:last-of-type {
+  margin-bottom: 2rem;
+}
+
+.game1-volleyball-image {
+  position: absolute;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: -80px;
+  z-index: 1000;
+}
+
+.volleyball-image {
+  height: 300px;
+  width: auto;
+  object-fit: contain;
+}
+
+.game1-close-button {
+  background: #f5f5f5;
+  color: #333333;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.game1-close-button:hover {
+  background: #e5e5e5;
+  transform: translateY(-1px);
+}
+
+/* Mobile styles for Game 1 popup */
+@media (max-width: 768px) {
+  .game1-content {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .game1-volleyball-image {
+    position: relative;
+    left: auto;
+    margin-bottom: 1rem;
+  }
+  
+  .volleyball-image {
+    height: 200px;
+  }
+  
+  .game1-text {
+    margin-left: 0;
+    padding: 1rem 2rem;
+    width: 100%;
+  }
+}
+
+/* Generic Game Popup Styles (Games 2-5) */
+.game-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.game-popup {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e5e5e5;
+  overflow: visible;
+}
+
+.game-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.game-text {
+  padding: 2rem 2rem 2rem 4rem;
+  flex: 1;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  margin-left: 120px;
+}
+
+.game-title {
+  color: #333333;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.game-description {
+  color: #333333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  font-weight: 400;
+}
+
+.game-description:last-of-type {
+  margin-bottom: 2rem;
+}
+
+.game-image {
+  position: absolute;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: -180px;
+  z-index: 1000;
+}
+
+.game-image-img {
+  height: 300px;
+  width: auto;
+  object-fit: contain;
+}
+
+.game-close-button {
+  background: #f5f5f5;
+  color: #333333;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.game-close-button:hover {
+  background: #e5e5e5;
+  transform: translateY(-1px);
+}
+
+/* Mobile styles for generic game popups */
+@media (max-width: 768px) {
+  .game-content {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .game-image {
+    position: relative;
+    left: auto;
+    margin-bottom: 1rem;
+  }
+  
+  .game-image-img {
+    height: 200px;
+  }
+  
+  .game-text {
+    margin-left: 0;
+    padding: 1rem 2rem;
+    width: 100%;
+  }
+}
+
 .app-header {
   background-color: #ffffff;
   padding: 2rem 0;
