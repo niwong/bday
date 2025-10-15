@@ -234,16 +234,17 @@ const App = () => {
               <div className="game-text">
                 <p className="game-title">Game 3: Chess</p>
                 <p className="game-description">
-                  Placeholder text for Game 3. This will be updated with the actual game description.
+                  Once upon a time ago, I used to play competitive chess. Let's see if u can beat me in a
+                  round of speed chess.
                 </p>
                 <p className="game-description">
-                  More placeholder content will go here.
+                  5pts awarded if u can beat me. Other points awarded for effort, awarded subjectively. 
                 </p>
                 <button 
                   className="game-close-button"
                   onClick={() => setShowGame3Popup(false)}
                 >
-                  acknowledge
+                  your move!
                 </button>
               </div>
             </div>
@@ -262,16 +263,16 @@ const App = () => {
               <div className="game-text">
                 <p className="game-title">Game 4: Coffee</p>
                 <p className="game-description">
-                  Placeholder text for Game 4. This will be updated with the actual game description.
+                  Love me some coffee.
                 </p>
                 <p className="game-description">
-                  More placeholder content will go here.
+                  Who can make the best cup of joe?
                 </p>
                 <button 
                   className="game-close-button"
                   onClick={() => setShowGame4Popup(false)}
                 >
-                  acknowledge
+                  wired
                 </button>
               </div>
             </div>
@@ -288,7 +289,7 @@ const App = () => {
                 <img src="/images/placeholder.png" alt="Game 5 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
-                <p className="game-title">Game 5: Olympics</p>
+                <p className="game-title">Game 5: Trivia</p>
                 <p className="game-description">
                   Placeholder text for Game 5. This will be updated with the actual game description.
                 </p>
@@ -299,7 +300,7 @@ const App = () => {
                   className="game-close-button"
                   onClick={() => setShowGame5Popup(false)}
                 >
-                  acknowledge
+                  understood
                 </button>
               </div>
             </div>
@@ -363,6 +364,9 @@ const App = () => {
           </div>
         ) : (
           <div className="dashboard-container">
+            {/* Games header for mobile */}
+            <div className="games-header-mobile">Games:</div>
+            
             {/* Row titles on the left */}
             <div className="row-titles">
               {rowTitles.map((title, index) => {
@@ -384,7 +388,8 @@ const App = () => {
                     onClick={handleClick}
                     style={{ cursor: 'pointer' }}
                   >
-                    {title}
+                    <span className="row-title-desktop">{title.split(' ').slice(0, -1).join(' ')} {title.split(' ').slice(-1)}</span>
+                    <span className="row-title-mobile">{index + 1}. {title.split(' ').slice(-1)}</span>
                   </div>
                 );
               })}
