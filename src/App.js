@@ -119,18 +119,29 @@ const App = () => {
       {showWelcomePopup && (
         <div className="welcome-popup-overlay">
           <div className="welcome-popup">
-            <h2 className="welcome-title">
-              Nick's 26th <span className="yikes-text">(yikes)</span> birthday in <span className="beta-text" style={{fontStyle: 'italic'}}>Beta</span>
-            </h2>
-            <p className="welcome-description">
-              I'm in the works of planning my 26th bday festivities. It's 2:18am on a freaking wednesday morning. I want to do some kind of olympics with different events that represent the things I fill my life with. Poke around my little app.
-            </p>
-            <button 
-              className="welcome-close-button"
-              onClick={() => setShowWelcomePopup(false)}
-            >
-              Close
-            </button>
+            <div className="welcome-content">
+              <div className="welcome-car-image">
+                <img src="/images/car-bigger.png" alt="Driving car" className="car-image" />
+              </div>
+              <div className="welcome-text">
+                <p className="welcome-greeting">howzit u fekes?</p>
+                <p className="welcome-description">
+                  Welcome to my asynchronous birthday olympics! Think of this as a nice outlet to release some of ur hyper-competitive energies as y'all work together to mimic bits of my life and favorite things in SF.
+                </p>
+                <p className="welcome-description">
+                  There are five games -- one for each teammate. Choose ur teammates wisely. Click on each game title for its instructions.
+                </p>
+                <p className="welcome-description">
+                  Each event will be scored out of 5 fantasy points. The winning team will get to eat dinner with me, and I'm buying drinks.
+                </p>
+                <button 
+                  className="welcome-close-button"
+                  onClick={() => setShowWelcomePopup(false)}
+                >
+                  Get started
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
