@@ -3,6 +3,72 @@
   background-color: #ffffff;
 }
 
+/* Welcome Popup Styles */
+.welcome-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.welcome-popup {
+  background: linear-gradient(135deg, #8A80D8 0%, #7A6AD0 25%, #3A4050 75%, #4A3A50 100%);
+  border-radius: 20px;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.welcome-title {
+  color: white;
+  font-size: 2.2rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.3;
+}
+
+.yikes-text {
+  font-size: 0.6em;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.welcome-description {
+  color: white;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
+  opacity: 0.95;
+}
+
+.welcome-close-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.welcome-close-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
 .app-header {
   background-color: #ffffff;
   padding: 2rem 0;

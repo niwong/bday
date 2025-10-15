@@ -7,6 +7,7 @@ const App = () => {
   // State management for modes
   const [currentMode, setCurrentMode] = useState('car'); // 'olympics', 'fantasy', 'car'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(true);
 
   // Memoized data generation to prevent refresh on mode changes
   const teamData = useMemo(() => {
@@ -114,6 +115,26 @@ const App = () => {
 
   return (
     <div className="app">
+      {/* Welcome Popup */}
+      {showWelcomePopup && (
+        <div className="welcome-popup-overlay">
+          <div className="welcome-popup">
+            <h2 className="welcome-title">
+              Nick's 26th <span className="yikes-text">(yikes)</span> birthday in <span className="beta-text" style={{fontStyle: 'italic'}}>Beta</span>
+            </h2>
+            <p className="welcome-description">
+              I'm in the works of planning my 26th bday festivities. It's 2:18am on a freaking wednesday morning. I want to do some kind of olympics with different events that represent the things I fill my life with. Poke around my little app.
+            </p>
+            <button 
+              className="welcome-close-button"
+              onClick={() => setShowWelcomePopup(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      
       <header className="app-header">
         <h1>{currentMode === 'fantasy' ? 'Fantasy Draft' : "Nicholas' Bday Olympics"}</h1>
         
