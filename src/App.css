@@ -1,0 +1,158 @@
+.app {
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.app-header {
+  background-color: #ffffff;
+  padding: 2rem 0;
+  text-align: center;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.app-header h1 {
+  color: #333333;
+  font-size: 2.5rem;
+  font-weight: 300;
+  margin: 0;
+}
+
+.dashboard {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.dashboard-container {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.row-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 100px;
+  padding-top: 4.5rem; /* Align with first player card row */
+}
+
+.row-title {
+  color: #333333; /* Black color */
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: right;
+  padding-right: 1rem;
+  height: 80px; /* Match player card height including gap */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.teams-container {
+  display: grid;
+  grid-template-columns: repeat(5, 250px);
+  gap: 2rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.team-column {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 300px;
+}
+
+.team-title {
+  color: #333333;
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.players-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.total-label {
+  color: #333333;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.total-score {
+  color: #333333;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+  .teams-container {
+    grid-template-columns: repeat(3, 250px);
+  }
+}
+
+@media (max-width: 768px) {
+  .teams-container {
+    grid-template-columns: repeat(2, 250px);
+  }
+  
+  .dashboard {
+    padding: 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 2rem;
+  }
+  
+  .dashboard-container {
+    gap: 1rem;
+  }
+  
+  .row-titles {
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .teams-container {
+    grid-template-columns: 250px;
+  }
+  
+  .dashboard-container {
+    flex-direction: column;
+  }
+  
+  .row-titles {
+    flex-direction: row;
+    justify-content: space-around;
+    padding-top: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .row-title {
+    text-align: center;
+    padding-right: 0;
+    height: auto;
+  }
+}
