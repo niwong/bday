@@ -56,6 +56,8 @@ const App = () => {
   const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
 
   // Memoized Fantasy Draft data - 10 teams, 6 rounds visible
+  // COMMENTED OUT - Fantasy mode temporarily disabled
+  /*
   const fantasyData = useMemo(() => {
     // Function to randomly select players from likers data (for fantasy draft)
     const getRandomPlayers = (count) => {
@@ -97,6 +99,7 @@ const App = () => {
 
     return { fantasyTeams, fantasyRounds };
   }, []); // Empty dependency array means this only runs once
+  */
 
   // Menu toggle function
   const toggleMenu = () => {
@@ -158,47 +161,11 @@ const App = () => {
       
       <main className="dashboard">
         {currentMode === 'fantasy' ? (
-          <div className="fantasy-draft-container">
-            <div className="draft-header">
-              <h2>10-team Standard Snake</h2>
-              <p>2 Min Per Pick • 15 Rounds</p>
-            </div>
-            
-            <div className="draft-board">
-              <div className="team-headers">
-                {fantasyData.fantasyTeams.map((team) => (
-                  <div key={team.teamId} className="team-header">
-                    <button className="claim-button">CLAIM</button>
-                    <h3>{team.name}</h3>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="draft-rounds">
-                {fantasyData.fantasyRounds.map((round) => (
-                  <div key={round.roundNumber} className="draft-round">
-                    <div className="round-label">Round {round.roundNumber}</div>
-                    <div className="round-picks">
-                      {round.picks.map((pick) => (
-                        <div key={pick.pickNumber} className="draft-pick">
-                          <div className="pick-number">{pick.pickNumber}</div>
-                          <div className="player-card-mini">
-                            <img 
-                              src={pick.player.profilePicUrl} 
-                              alt={pick.player.name}
-                              className="player-avatar-mini"
-                            />
-                            <div className="player-info-mini">
-                              <div className="player-name-mini">{pick.player.name}</div>
-                              <div className="player-position-mini">{pick.position}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="coming-soon-container">
+            <div className="coming-soon-content">
+              <div className="coming-soon-emoji">🏐</div>
+              <h2 className="coming-soon-title">Coming Soon</h2>
+              <p className="coming-soon-subtitle">Fantasy Draft mode is under development</p>
             </div>
           </div>
         ) : (
