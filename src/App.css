@@ -297,6 +297,16 @@
   margin-bottom: 2rem;
 }
 
+.game-description ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.game-description li {
+  margin: 0.25rem 0;
+  line-height: 1.4;
+}
+
 .game-image {
   position: absolute;
   flex-shrink: 0;

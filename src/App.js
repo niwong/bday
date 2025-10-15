@@ -197,11 +197,20 @@ const App = () => {
               <div className="game-text">
                 <p className="game-title">Game 2: Pasta</p>
                 <p className="game-description">
-                  Placeholder text for Game 2. This will be updated with the actual game description.
+                  I've been making the same pasta since college. I've cooked it for many of you.
+                  Here's the recipe... try to imitate it, and whoever gets closest wins. ;)
                 </p>
-                <p className="game-description">
-                  More placeholder content will go here.
-                </p>
+                <div className="game-description">
+                  Nick's Pasta:
+                  <ul>
+                    <li>celery, carrot, onion</li>
+                    <li>garlic, red pepper flakes, fennel seed</li>
+                    <li>2lbs ground beef (protein)</li>
+                    <li>wine</li>
+                    <li>tomato sauce</li>
+                    <li>de cecco pasta</li>
+                  </ul>
+                </div>
                 <button 
                   className="game-close-button"
                   onClick={() => setShowGame2Popup(false)}
