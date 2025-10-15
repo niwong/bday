@@ -5,7 +5,7 @@ import likersData from './extracted_likers.json';
 
 const App = () => {
   // State management for modes
-  const [currentMode, setCurrentMode] = useState('car'); // 'olympics', 'fantasy', 'car'
+  const [currentMode, setCurrentMode] = useState('olympics'); // 'olympics', 'fantasy', 'car'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
   const [showGame1Popup, setShowGame1Popup] = useState(false);
@@ -229,7 +229,7 @@ const App = () => {
           <div className="game-popup">
             <div className="game-content">
               <div className="game-image">
-                <img src="/images/placeholder.png" alt="Game 3 placeholder" className="game-image-img" />
+                <img src="/images/chess.png" alt="Game 3 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
                 <p className="game-title">Game 3: Chess</p>
@@ -335,18 +335,12 @@ const App = () => {
               >
                 Fantasy Draft
               </button>
-              <button 
-                className={`menu-item ${currentMode === 'car' ? 'active' : ''}`}
-                onClick={() => changeMode('car')}
-              >
-                Car Mode
-              </button>
             </div>
           )}
         </div>
 
-        {/* Car Animation - only show in olympics mode */}
-        {currentMode === 'olympics' && (
+        {/* Car Animation - show when car mode is active */}
+        {currentMode === 'car' && (
           <div className="car-container">
             <img src="/images/car.png" alt="Driving car" className="animated-car" />
           </div>
@@ -424,6 +418,15 @@ const App = () => {
           </div>
         )}
       </main>
+
+      {/* Floating Car Mode Button */}
+      <button 
+        className={`floating-car-button ${currentMode === 'car' ? 'active' : ''}`}
+        onClick={() => setCurrentMode(currentMode === 'car' ? 'olympics' : 'car')}
+        title="Car Mode"
+      >
+        <img src="/images/car.png" alt="Car Mode" className="car-icon" />
+      </button>
     </div>
   );
 };
