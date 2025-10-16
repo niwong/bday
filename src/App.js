@@ -191,7 +191,7 @@ const App = () => {
         <div className="game-popup-overlay">
           <div className="game-popup">
             <div className="game-content">
-              <div className="game-image">
+              <div className="game2-image">
                 <img src="/images/red-pot.png" alt="Red pot" className="game-image-img" />
               </div>
               <div className="game-text">
@@ -228,7 +228,7 @@ const App = () => {
         <div className="game-popup-overlay">
           <div className="game-popup">
             <div className="game-content">
-              <div className="game-image">
+              <div className="game3-image">
                 <img src="/images/chess.png" alt="Game 3 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
@@ -257,8 +257,8 @@ const App = () => {
         <div className="game-popup-overlay">
           <div className="game-popup">
             <div className="game-content">
-              <div className="game-image">
-                <img src="/images/placeholder.png" alt="Game 4 placeholder" className="game-image-img" />
+              <div className="game4-image">
+                <img src="/images/coffee.png" alt="Game 4 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
                 <p className="game-title">Game 4: Coffee</p>
@@ -285,11 +285,11 @@ const App = () => {
         <div className="game-popup-overlay">
           <div className="game-popup">
             <div className="game-content">
-              <div className="game-image">
-                <img src="/images/placeholder.png" alt="Game 5 placeholder" className="game-image-img" />
+              <div className="game5-image">
+                <img src="/images/nick.png" alt="Game 5 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
-                <p className="game-title">Game 5: Trivia</p>
+                <p className="game-title">Game 5: Nick Trivia</p>
                 <p className="game-description">
                   Placeholder text for Game 5. This will be updated with the actual game description.
                 </p>
