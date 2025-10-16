@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import './App.css';
 import PlayerCard from './components/PlayerCard';
+import PlayerSelectionModal from './components/PlayerSelectionModal';
 import NineManGame from './components/NineManGame/NineManGame';
 import likersData from './extracted_likers.json';
 import { supabase } from './supabase';
@@ -20,6 +21,11 @@ const App = () => {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  
+  // Player management modal state
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
+  const [selectedTeamForAdd, setSelectedTeamForAdd] = useState(null);
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
   
   // Team highlight state for score changes
   const [teamHighlights, setTeamHighlights] = useState({});
@@ -157,7 +163,8 @@ const App = () => {
       name: liker.name,
       ranking: index + 1,
       score: Math.round(Math.random() * 10) / 10, // Random score rounded to one decimal place
-      profilePicUrl: liker.profile_pic_url
+      profilePicUrl: liker.profile_pic_url,
+      isEmpty: false
     }));
   };
 
@@ -337,18 +344,130 @@ const App = () => {
     syncScoresToSupabase(updatedData);
   };
 
+  // Get available players (not currently on any team)
+  const getAvailablePlayers = () => {
+    const playersOnTeams = new Set();
+    
+    // Collect all player names currently on teams
+    teamData.forEach(team => {
+      team.players.forEach(player => {
+        if (!player.isEmpty && player.name) {
+          playersOnTeams.add(player.name);
+        }
+      });
+    });
+    
+    // Filter likers data to exclude players already on teams
+    return likersData.filter(liker => !playersOnTeams.has(liker.name));
+  };
+
+  // Remove player from team (replace with empty slot)
+  const removePlayerFromTeam = async (teamId, playerId) => {
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        return {
+          ...team,
+          players: team.players.map(player => 
+            player.id === playerId 
+              ? { 
+                  id: `empty-${Date.now()}-${Math.random()}`, 
+                  isEmpty: true, 
+                  name: '', 
+                  score: 0,
+                  profilePicUrl: null
+                }
+              : player
+          )
+        };
+      }
+      return team;
+    });
+    
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+  };
+
+  // Add player to team (fill empty slot)
+  const addPlayerToTeam = async (teamId, slotIndex, playerData) => {
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        const newPlayers = [...team.players];
+        newPlayers[slotIndex] = {
+          id: Date.now() + Math.random(), // Generate unique ID
+          isEmpty: false,
+          name: playerData.name,
+          score: 0, // Start with 0 score
+          profilePicUrl: playerData.profile_pic_url,
+          ranking: 1 // Default ranking
+        };
+        
+        return {
+          ...team,
+          players: newPlayers
+        };
+      }
+      return team;
+    });
+    
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+    
+    // Close modal and reset state
+    setShowPlayerModal(false);
+    setSelectedTeamForAdd(null);
+    setSelectedSlotIndex(null);
+  };
+
+  // Handle player removal
+  const handlePlayerRemove = (teamId, playerId) => {
+    removePlayerFromTeam(teamId, playerId);
+  };
+
+  // Handle player add (open modal)
+  const handlePlayerAdd = (teamId, playerId) => {
+    // Find the actual index of the empty slot in the original team data
+    const team = teamData.find(t => t.teamId === teamId);
+    const actualIndex = team.players.findIndex(p => p.id === playerId);
+    
+    setSelectedTeamForAdd(teamId);
+    setSelectedSlotIndex(actualIndex);
+    setShowPlayerModal(true);
+  };
+
+  // Handle player selection from modal
+  const handlePlayerSelect = (playerData) => {
+    addPlayerToTeam(selectedTeamForAdd, selectedSlotIndex, playerData);
+  };
+
+  // Close player modal
+  const handlePlayerModalClose = () => {
+    setShowPlayerModal(false);
+    setSelectedTeamForAdd(null);
+    setSelectedSlotIndex(null);
+  };
+
   // Row titles for the left side
   const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
 
-  // Sort teams based on total scores
+  // Sort teams based on total scores and sort players within teams
   const sortedTeams = useMemo(() => {
     if (!teamData.length) return [];
     
-    // Calculate total scores for each team
-    const teamsWithTotals = teamData.map(team => ({
-      ...team,
-      totalScore: team.players.reduce((sum, player) => sum + player.score, 0)
-    }));
+    // Calculate total scores for each team and sort players within teams
+    const teamsWithTotals = teamData.map(team => {
+      // Sort players: filled cards first, empty cards at bottom
+      const sortedPlayers = [...team.players].sort((a, b) => {
+        if (a.isEmpty && !b.isEmpty) return 1; // Empty cards go to bottom
+        if (!a.isEmpty && b.isEmpty) return -1; // Filled cards go to top
+        return 0; // Maintain order within same type
+      });
+      
+      return {
+        ...team,
+        players: sortedPlayers,
+        totalScore: team.players.reduce((sum, player) => sum + player.score, 0)
+      };
+    });
     
     // Check if all teams have 0 points
     const allZeroPoints = teamsWithTotals.every(team => team.totalScore === 0);
@@ -806,7 +925,7 @@ const App = () => {
                   <div key={team.teamId} className={`team-column ${teamHighlights[team.teamId] ? `team-highlight-${teamHighlights[team.teamId]}` : ''}`}>
                     <h2 className="team-title">{team.title}</h2>
                     <div className="players-container">
-                      {team.players.map((player) => (
+                      {team.players.map((player, index) => (
                         <PlayerCard
                           key={player.id}
                           name={player.name}
@@ -814,7 +933,10 @@ const App = () => {
                           score={player.score}
                           profilePicUrl={player.profilePicUrl}
                           isAdminMode={isAdminMode}
+                          isEmpty={player.isEmpty}
                           onScoreUpdate={(newScore) => updatePlayerScore(team.teamId, player.id, newScore)}
+                          onRemove={() => handlePlayerRemove(team.teamId, player.id)}
+                          onAdd={() => handlePlayerAdd(team.teamId, player.id)}
                         />
                       ))}
                     </div>
@@ -829,6 +951,14 @@ const App = () => {
           </div>
         )}
       </main>
+
+      {/* Player Selection Modal */}
+      <PlayerSelectionModal
+        isOpen={showPlayerModal}
+        onSelect={handlePlayerSelect}
+        onClose={handlePlayerModalClose}
+        availablePlayers={getAvailablePlayers()}
+      />
 
       {/* Floating Car Mode Button */}
       <button 
