@@ -1,15 +1,75 @@
 import React, { useState } from 'react';
 import './PlayerCard.css';
 
-const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, onScoreUpdate }) => {
+const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty, onScoreUpdate, onRemove, onAdd, onDragStart, onDragOver, onDrop, playerId, teamId, playerIndex }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(score.toString());
 
   // Handle double-click to enable editing (admin mode only)
   const handleDoubleClick = () => {
-    if (isAdminMode) {
+    if (isAdminMode && !isEmpty) {
       setIsEditing(true);
       setEditValue(score.toString());
+    }
+  };
+
+  // Handle remove button click
+  const handleRemoveClick = (e) => {
+    e.stopPropagation();
+    if (isAdminMode && !isEmpty && onRemove) {
+      onRemove();
+    }
+  };
+
+  // Handle add button click
+  const handleAddClick = (e) => {
+    e.stopPropagation();
+    if (isAdminMode && isEmpty && onAdd) {
+      onAdd();
+    }
+  };
+
+  // Handle drag start
+  const handleDragStart = (e) => {
+    if (isAdminMode && !isEmpty) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({
+        playerId,
+        teamId,
+        playerIndex,
+        playerData: { name, ranking, score, profilePicUrl, isEmpty }
+      }));
+      e.dataTransfer.effectAllowed = 'move';
+      e.target.classList.add('dragging');
+    }
+  };
+
+  // Handle drag end
+  const handleDragEnd = (e) => {
+    e.target.classList.remove('dragging');
+  };
+
+  // Handle drag over
+  const handleDragOver = (e) => {
+    if (isAdminMode && onDragOver) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.target.classList.add('drag-over');
+    }
+  };
+
+  // Handle drag leave
+  const handleDragLeave = (e) => {
+    e.target.classList.remove('drag-over');
+  };
+
+  // Handle drop
+  const handleDrop = (e) => {
+    if (isAdminMode && onDrop) {
+      e.preventDefault();
+      e.target.classList.remove('drag-over');
+      
+      const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      onDrop(dragData, { playerId, teamId, playerIndex });
     }
   };
 
@@ -69,15 +129,43 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, onScoreU
 
   return (
     <div 
-      className={`player-card ${isAdminMode ? 'admin-mode' : ''}`}
+      className={`player-card ${isAdminMode ? 'admin-mode' : ''} ${isEmpty ? 'empty' : ''}`}
       onDoubleClick={handleDoubleClick}
+      draggable={isAdminMode && !isEmpty}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
+      {/* Remove button (X icon) - only show on hover for filled cards */}
+      {isAdminMode && !isEmpty && (
+        <button 
+          className="remove-icon"
+          onClick={handleRemoveClick}
+          title="Remove player"
+        >
+          ×
+        </button>
+      )}
+
+      {/* Add button (+ icon) - only show on hover for empty cards */}
+      {isAdminMode && isEmpty && (
+        <button 
+          className="add-icon"
+          onClick={handleAddClick}
+          title="Add player"
+        >
+          +
+        </button>
+      )}
+
       <div className="player-info">
         <div 
           className="profile-picture"
-          style={{ backgroundColor: getBackgroundColor(name) }}
+          style={{ backgroundColor: isEmpty ? '#e0e0e0' : getBackgroundColor(name) }}
         >
-          {profilePicUrl ? (
+          {!isEmpty && profilePicUrl ? (
             <img 
               src={profilePicUrl} 
               alt={name}
@@ -88,13 +176,13 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, onScoreU
               }}
             />
           ) : null}
-          <div className="profile-initials" style={{ display: profilePicUrl ? 'none' : 'flex' }}>
-            {getInitials(name)}
+          <div className="profile-initials" style={{ display: (!isEmpty && profilePicUrl) ? 'none' : 'flex' }}>
+            {isEmpty ? '?' : getInitials(name)}
           </div>
         </div>
         <div className="player-details">
-          <h3 className="player-name">{name}</h3>
-          {isEditing ? (
+          <h3 className="player-name">{isEmpty ? 'Empty Slot' : name}</h3>
+          {!isEmpty && isEditing ? (
             <input
               type="number"
               className="player-score-input"
@@ -107,8 +195,10 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, onScoreU
               step="0.01"
               autoFocus
             />
-          ) : (
+          ) : !isEmpty ? (
             <div className="player-score">{score.toFixed(2)}/5.00</div>
+          ) : (
+            <div className="player-score empty-score">Click + to add</div>
           )}
         </div>
       </div>

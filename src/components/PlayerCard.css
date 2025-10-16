@@ -5,6 +5,7 @@
   padding: 1rem;
   transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .player-card:hover {
@@ -19,6 +20,108 @@
 .player-card.admin-mode:hover {
   border-color: #ff6b6b;
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+}
+
+/* Drag and drop styles */
+.player-card.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  z-index: 1000;
+}
+
+.player-card.drag-over {
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  background-color: #f8f9ff;
+}
+
+.player-card[draggable="true"] {
+  cursor: grab;
+}
+
+.player-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* Empty card styles */
+.player-card.empty {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  opacity: 0.7;
+}
+
+.player-card.empty:hover {
+  opacity: 1;
+  border-color: #28a745;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+
+/* Remove icon (X) */
+.remove-icon {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.remove-icon:hover {
+  background-color: #c82333;
+  transform: scale(1.1);
+}
+
+.player-card.admin-mode:hover .remove-icon {
+  display: flex;
+}
+
+/* Add icon (+) */
+.add-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.add-icon:hover {
+  background-color: #218838;
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.player-card.empty.admin-mode:hover .add-icon {
+  display: flex;
+}
+
+/* Empty score text */
+.empty-score {
+  color: #6c757d;
+  font-style: italic;
 }
 
 .player-info {
