@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 
 const App = () => {
   // State management for modes
-  const [currentMode, setCurrentMode] = useState('olympics'); // 'olympics', 'fantasy', 'car', '9man'
+  const [currentMode, setCurrentMode] = useState('olympics'); // 'olympics', 'fantasy', 'car', '9man', 'teammaker'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
   const [showGame1Popup, setShowGame1Popup] = useState(false);
@@ -33,6 +33,13 @@ const App = () => {
 
   // Team data state (replaced useMemo with useState for persistence)
   const [teamData, setTeamData] = useState([]);
+
+  // Team Maker Mode state
+  const [teamMakerPlayers, setTeamMakerPlayers] = useState([null, null, null, null, null]); // 5 game slots
+  const [teamName, setTeamName] = useState('');
+  const [teamCaptain, setTeamCaptain] = useState('');
+  const [selectedGameSlot, setSelectedGameSlot] = useState(null);
+  const [teamMakerStep, setTeamMakerStep] = useState(1); // 1 or 2
 
   // Supabase sync functions
   const syncScoresToSupabase = async (scores) => {
@@ -444,6 +451,65 @@ const App = () => {
     setShowPlayerModal(false);
     setSelectedTeamForAdd(null);
     setSelectedSlotIndex(null);
+  };
+
+  // Team Maker Mode handlers
+  const handleTeamMakerPlayerSelect = (gameSlotIndex) => {
+    setSelectedGameSlot(gameSlotIndex);
+    setShowPlayerModal(true);
+  };
+
+  const handleTeamMakerPlayerAdd = (playerData) => {
+    const newPlayers = [...teamMakerPlayers];
+    newPlayers[selectedGameSlot] = playerData;
+    setTeamMakerPlayers(newPlayers);
+    setShowPlayerModal(false);
+    setSelectedGameSlot(null);
+  };
+
+  const handleTeamMakerPlayerRemove = (gameSlotIndex) => {
+    const newPlayers = [...teamMakerPlayers];
+    newPlayers[gameSlotIndex] = null;
+    setTeamMakerPlayers(newPlayers);
+  };
+
+  const generateTeamMakerMessage = () => {
+    const gameNames = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
+    let message = `Team Name: ${teamName}\nCaptain: ${teamCaptain}\n\n`;
+    
+    teamMakerPlayers.forEach((player, index) => {
+      if (player) {
+        message += `${gameNames[index]}: ${player.name}\n`;
+      }
+    });
+    
+    return message;
+  };
+
+  const handleTeamMakerNext = () => {
+    if (!teamName.trim() || !teamCaptain.trim()) {
+      alert('Please enter both team name and captain name');
+      return;
+    }
+    setTeamMakerStep(2);
+  };
+
+  const handleTeamMakerBack = () => {
+    setTeamMakerStep(1);
+  };
+
+  const handleTeamMakerSubmit = () => {
+    const message = generateTeamMakerMessage();
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Try SMS first (will need phone number)
+    const smsLink = `sms:+1PHONENUMBER?body=${encodedMessage}`;
+    
+    // Fallback to email
+    const emailLink = `mailto:nick@nickwong.io?subject=Team Proposal&body=${encodedMessage}`;
+    
+    // For now, use email since we don't have phone number
+    window.location.href = emailLink;
   };
 
   // Handle drag and drop reordering
@@ -896,6 +962,12 @@ const App = () => {
                 9man Mode
               </button>
               <button 
+                className={`menu-item ${currentMode === 'teammaker' ? 'active' : ''}`}
+                onClick={() => changeMode('teammaker')}
+              >
+                Team Maker Mode
+              </button>
+              <button 
                 className={`menu-item ${isAdminMode ? 'active' : ''}`}
                 onClick={handleAdminModeClick}
               >
@@ -924,6 +996,123 @@ const App = () => {
           </div>
         ) : currentMode === '9man' ? (
           <NineManGame onExit={() => changeMode('olympics')} />
+        ) : currentMode === 'teammaker' ? (
+          <div className="team-maker-wizard">
+            <div className="wizard-content">
+              <div className="wizard-car-image">
+                <img src="/images/car.png" alt="Car" className="car-image" />
+              </div>
+              <div className="wizard-text">
+                {teamMakerStep === 1 ? (
+                  <>
+                    <p className="wizard-greeting">Im back! to help you build your team</p>
+                    <p className="wizard-description">be careful with who you select here... you're gonna have to work together with these guys.</p>
+                    
+                    <div className="wizard-form">
+                      <div className="wizard-input-group">
+                        <label className="wizard-label">help me by giving me a team name:</label>
+                        <input
+                          type="text"
+                          value={teamName}
+                          onChange={(e) => setTeamName(e.target.value)}
+                          className="wizard-input"
+                          placeholder=""
+                        />
+                      </div>
+                      
+                      <div className="wizard-input-group">
+                        <label className="wizard-label">and who are you?</label>
+                        <input
+                          type="text"
+                          value={teamCaptain}
+                          onChange={(e) => setTeamCaptain(e.target.value)}
+                          className="wizard-input"
+                          placeholder=""
+                        />
+                      </div>
+                      
+                      <button 
+                        className="wizard-button"
+                        onClick={handleTeamMakerNext}
+                        disabled={!teamName.trim() || !teamCaptain.trim()}
+                      >
+                        next
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="wizard-greeting">Now put your thinking cap on. I need a...</p>
+                    <p className="wizard-description">volleyballer, a chef, a brain, a fiend, and someone that just knows nick.</p>
+                    <p className="wizard-description">use the person picker to select people. nick worked hard to make this picker.</p>
+                    <p className="wizard-description">he ripped all of these profiles from instagram using AI</p>
+                    
+                    <div className="wizard-player-slots">
+                      {rowTitles.map((gameTitle, index) => {
+                        const player = teamMakerPlayers[index];
+                        const gameEmoji = gameTitle.split(' ').pop(); // Get the emoji from the title
+                        return (
+                          <div key={index} className="wizard-player-slot">
+                            {player ? (
+                              <div className="wizard-selected-player">
+                                <div className="wizard-player-avatar">
+                                  {player.profile_pic_url ? (
+                                    <img 
+                                      src={player.profile_pic_url} 
+                                      alt={player.name}
+                                      className="wizard-player-image"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null}
+                                    <div className="wizard-player-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
+                                      {player.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
+                                    </div>
+                                  </div>
+                                  <div className="wizard-player-name">{player.name}</div>
+                                  <button 
+                                    className="wizard-remove-btn"
+                                    onClick={() => handleTeamMakerPlayerRemove(index)}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ) : (
+                                <button 
+                                  className="wizard-select-btn"
+                                  onClick={() => handleTeamMakerPlayerSelect(index)}
+                                >
+                                  <span className="wizard-game-emoji">{gameEmoji}</span>
+                                  <span className="wizard-select-text">select player</span>
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className="wizard-actions">
+                        <button 
+                          className="wizard-button wizard-back-btn"
+                          onClick={handleTeamMakerBack}
+                        >
+                          back
+                        </button>
+                        <button 
+                          className="wizard-button wizard-submit-btn"
+                          onClick={handleTeamMakerSubmit}
+                          disabled={teamMakerPlayers.every(p => p === null)}
+                        >
+                          send to nick
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
         ) : (
           <div className="dashboard-container">
             {/* Games header for mobile */}
@@ -1000,9 +1189,9 @@ const App = () => {
       {/* Player Selection Modal */}
       <PlayerSelectionModal
         isOpen={showPlayerModal}
-        onSelect={handlePlayerSelect}
+        onSelect={currentMode === 'teammaker' ? handleTeamMakerPlayerAdd : handlePlayerSelect}
         onClose={handlePlayerModalClose}
-        availablePlayers={getAvailablePlayers()}
+        availablePlayers={currentMode === 'teammaker' ? likersData : getAvailablePlayers()}
       />
 
       {/* Floating Car Mode Button */}
