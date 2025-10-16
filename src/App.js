@@ -53,7 +53,7 @@ const App = () => {
       id: index + 1,
       name: liker.name,
       ranking: index + 1,
-      score: Math.random() * 2 + 3, // Random score between 3.0 and 5.0
+      score: Math.round(Math.random() * 10) / 10, // Random score rounded to one decimal place
       profilePicUrl: liker.profile_pic_url
     }));
   };
