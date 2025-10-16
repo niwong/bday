@@ -1,7 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './PlayerCard.css';
 
-const PlayerCard = ({ name, ranking, score, profilePicUrl }) => {
+const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, onScoreUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(score.toString());
+
+  // Handle double-click to enable editing (admin mode only)
+  const handleDoubleClick = () => {
+    if (isAdminMode) {
+      setIsEditing(true);
+      setEditValue(score.toString());
+    }
+  };
+
+  // Handle score save
+  const handleSave = () => {
+    const newScore = parseFloat(editValue);
+    if (!isNaN(newScore) && newScore >= 0 && newScore <= 5) {
+      // Round to hundredths place (2 decimal places)
+      const roundedScore = Math.round(newScore * 100) / 100;
+      onScoreUpdate(roundedScore);
+      setIsEditing(false);
+    } else {
+      // Reset to original value if invalid
+      setEditValue(score.toString());
+      setIsEditing(false);
+    }
+  };
+
+  // Handle cancel editing
+  const handleCancel = () => {
+    setEditValue(score.toString());
+    setIsEditing(false);
+  };
+
+  // Handle key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
   // Generate initials from name
   const getInitials = (name) => {
     return name
@@ -27,7 +68,10 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl }) => {
   };
 
   return (
-    <div className="player-card">
+    <div 
+      className={`player-card ${isAdminMode ? 'admin-mode' : ''}`}
+      onDoubleClick={handleDoubleClick}
+    >
       <div className="player-info">
         <div 
           className="profile-picture"
@@ -50,7 +94,22 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl }) => {
         </div>
         <div className="player-details">
           <h3 className="player-name">{name}</h3>
-          <div className="player-score">{score.toFixed(1)}/5.0</div>
+          {isEditing ? (
+            <input
+              type="number"
+              className="player-score-input"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={handleKeyPress}
+              min="0"
+              max="5"
+              step="0.01"
+              autoFocus
+            />
+          ) : (
+            <div className="player-score">{score.toFixed(2)}/5.00</div>
+          )}
         </div>
       </div>
     </div>
