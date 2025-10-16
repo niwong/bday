@@ -1315,3 +1315,286 @@
     transform: scale(1);
   }
 }
+
+/* Team Maker Wizard Styles */
+.team-maker-wizard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.wizard-content {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  max-width: 1000px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.wizard-car-image {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wizard-car-image .car-image {
+  max-width: 250px;
+  height: auto;
+  object-fit: contain;
+}
+
+.wizard-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-greeting {
+  font-size: 1rem;
+  font-weight: normal;
+  color: #333;
+  margin: 0 0 0.8rem 0;
+  line-height: 1.3;
+}
+
+.wizard-description {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0 0 0.6rem 0;
+  line-height: 1.3;
+}
+
+.wizard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.wizard-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wizard-label {
+  font-size: 0.8rem;
+  color: #333;
+  font-weight: normal;
+}
+
+.wizard-input {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.wizard-input:focus {
+  border-color: #666;
+}
+
+.wizard-button {
+  padding: 0.6rem 1.2rem;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.wizard-button:hover:not(:disabled) {
+  background: #e8e8e8;
+  border-color: #ccc;
+}
+
+.wizard-button:disabled {
+  background: #f8f8f8;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.wizard-player-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 2rem 0;
+  max-width: 350px;
+}
+
+.wizard-player-slots .wizard-player-slot:nth-child(4),
+.wizard-player-slots .wizard-player-slot:nth-child(5) {
+  grid-column: span 1;
+  justify-self: center;
+}
+
+.wizard-player-slot {
+  aspect-ratio: 1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 1rem;
+}
+
+.wizard-select-btn {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.wizard-select-btn:hover {
+  background: #f8f8f8;
+}
+
+.wizard-game-emoji {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.wizard-select-text {
+  font-size: 0.7rem;
+  color: #666;
+  text-align: center;
+}
+
+.wizard-selected-player {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  position: relative;
+}
+
+.wizard-player-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.wizard-player-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wizard-player-initials {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #666;
+}
+
+.wizard-player-name {
+  font-size: 0.6rem;
+  color: #333;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.wizard-remove-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wizard-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.wizard-back-btn {
+  background: #f8f8f8;
+}
+
+.wizard-submit-btn {
+  background: #333;
+  color: white;
+  border-color: #333;
+}
+
+.wizard-submit-btn:hover:not(:disabled) {
+  background: #555;
+  border-color: #555;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .wizard-content {
+    flex-direction: column;
+    padding: 2rem;
+    gap: 2rem;
+    max-width: 400px;
+  }
+  
+  .wizard-car-image .car-image {
+    max-width: 180px;
+  }
+  
+  .wizard-player-slots {
+    max-width: 280px;
+    gap: 0.75rem;
+  }
+  
+  .wizard-player-slot {
+    padding: 0.75rem;
+  }
+  
+  .wizard-game-emoji {
+    font-size: 1.2rem;
+  }
+  
+  .wizard-select-text {
+    font-size: 0.6rem;
+  }
+}
