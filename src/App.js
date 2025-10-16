@@ -3,6 +3,7 @@ import './App.css';
 import PlayerCard from './components/PlayerCard';
 import NineManGame from './components/NineManGame/NineManGame';
 import likersData from './extracted_likers.json';
+import { supabase } from './supabase';
 
 const App = () => {
   // State management for modes
@@ -27,24 +28,124 @@ const App = () => {
   // Team data state (replaced useMemo with useState for persistence)
   const [teamData, setTeamData] = useState([]);
 
-  // Data persistence functions (Firebase-ready)
-  const loadScores = () => {
+  // Supabase sync functions
+  const syncScoresToSupabase = async (scores) => {
     try {
-      const saved = localStorage.getItem('birthday-olympics-scores');
-      if (saved) {
-        return JSON.parse(saved);
+      console.log('💾 Syncing scores to Supabase...', scores);
+      
+      const { error } = await supabase
+        .from('scores')
+        .update({ 
+          team_data: scores,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', 1);
+      
+      if (error) {
+        console.error('❌ Error syncing to Supabase:', error);
+      } else {
+        console.log('✅ Successfully synced to Supabase');
       }
-    } catch (error) {
-      console.error('Error loading scores:', error);
+      
+      localStorage.setItem('birthday-olympics-scores', JSON.stringify(scores));
+    } catch (err) {
+      console.error('❌ Sync error:', err);
     }
-    return null;
   };
 
-  const saveScores = (scores) => {
+  const initializeSupabaseListener = () => {
+    console.log('🔗 Initializing Supabase real-time listener...');
+    
+    // Check if supabase client is properly initialized
+    if (!supabase) {
+      console.error('❌ Supabase client is not initialized');
+      return;
+    }
+    
     try {
-      localStorage.setItem('birthday-olympics-scores', JSON.stringify(scores));
+      console.log('📡 Creating Supabase channel...');
+      const channel = supabase
+        .channel('scores-changes')
+        .on('postgres_changes', 
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'scores',
+            filter: 'id=eq.1'
+          },
+          (payload) => {
+            console.log('📡 Received real-time update:', payload);
+            
+            // Update local state with new data from Supabase
+            const newData = payload.new.team_data;
+            setTeamData(newData);
+            localStorage.setItem('birthday-olympics-scores', JSON.stringify(newData));
+            
+            // Trigger highlight animations for changed scores
+            // Compare old vs new to determine which teams changed
+            if (payload.old && payload.old.team_data) {
+              const oldData = payload.old.team_data;
+              const changedTeams = [];
+              
+              newData.forEach((newTeam, teamIndex) => {
+                const oldTeam = oldData[teamIndex];
+                if (oldTeam) {
+                  const oldTotal = oldTeam.players.reduce((sum, player) => sum + player.score, 0);
+                  const newTotal = newTeam.players.reduce((sum, player) => sum + player.score, 0);
+                  
+                  if (oldTotal !== newTotal) {
+                    changedTeams.push({
+                      teamId: newTeam.teamId,
+                      highlightColor: newTotal > oldTotal ? 'green' : 'red'
+                    });
+                  }
+                }
+              });
+              
+              // Apply highlights for changed teams
+              changedTeams.forEach(({ teamId, highlightColor }) => {
+                setTeamHighlights(prev => ({
+                  ...prev,
+                  [teamId]: highlightColor
+                }));
+                
+                // Remove highlight after animation duration
+                setTimeout(() => {
+                  setTeamHighlights(prev => {
+                    const newHighlights = { ...prev };
+                    delete newHighlights[teamId];
+                    return newHighlights;
+                  });
+                }, 1000);
+              });
+            }
+          }
+        )
+        .subscribe((status, err) => {
+          console.log('📡 Supabase subscription status:', status);
+          if (err) {
+            console.error('❌ Subscription error:', err);
+          }
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Successfully subscribed to real-time updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Failed to subscribe to real-time updates');
+            console.error('❌ This usually means:');
+            console.error('   1. Realtime not enabled on scores table');
+            console.error('   2. Wrong Supabase credentials');
+            console.error('   3. Network/firewall issues');
+            console.error('   4. Supabase project paused or inactive');
+          } else if (status === 'TIMED_OUT') {
+            console.error('❌ Subscription timed out');
+          } else if (status === 'CLOSED') {
+            console.error('❌ Subscription closed');
+          }
+        });
+        
+      console.log('📡 Channel created, subscribing...');
     } catch (error) {
-      console.error('Error saving scores:', error);
+      console.error('❌ Error creating real-time listener:', error);
     }
   };
 
@@ -62,45 +163,125 @@ const App = () => {
 
   // Initialize team data on component mount
   useEffect(() => {
-    const savedData = loadScores();
-    if (savedData) {
-      setTeamData(savedData);
-    } else {
-      // Generate initial team data
-      const initialData = [
-        {
-          teamId: 1,
-          title: "Team 1",
-          players: getRandomPlayers(5)
-        },
-        {
-          teamId: 2,
-          title: "Team 2", 
-          players: getRandomPlayers(5)
-        },
-        {
-          teamId: 3,
-          title: "Team 3",
-          players: getRandomPlayers(5)
-        },
-        {
-          teamId: 4,
-          title: "Team 4",
-          players: getRandomPlayers(5)
-        },
-        {
-          teamId: 5,
-          title: "Team 5",
-          players: getRandomPlayers(5)
+    const initializeData = async () => {
+      console.log('🚀 Initializing app data...');
+      
+      // Test Supabase connection first
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from('scores')
+          .select('id')
+          .limit(1);
+        
+        if (testError) {
+          console.error('❌ Supabase connection test failed:', testError);
+          return;
+        } else {
+          console.log('✅ Supabase connection test passed');
         }
-      ];
-      setTeamData(initialData);
-      saveScores(initialData);
-    }
+      } catch (err) {
+        console.error('❌ Supabase connection error:', err);
+        return;
+      }
+      
+      // Try loading from Supabase first
+      const { data, error } = await supabase
+        .from('scores')
+        .select('team_data')
+        .eq('id', 1)
+        .single();
+      
+      console.log('📊 Supabase query result:', { data, error });
+      
+      if (data && data.team_data && data.team_data.length > 0) {
+        setTeamData(data.team_data);
+        localStorage.setItem('birthday-olympics-scores', JSON.stringify(data.team_data));
+      } else {
+        // Generate initial data if none exists
+        const initialData = [
+          {
+            teamId: 1,
+            title: "Team 1",
+            players: getRandomPlayers(5)
+          },
+          {
+            teamId: 2,
+            title: "Team 2", 
+            players: getRandomPlayers(5)
+          },
+          {
+            teamId: 3,
+            title: "Team 3",
+            players: getRandomPlayers(5)
+          },
+          {
+            teamId: 4,
+            title: "Team 4",
+            players: getRandomPlayers(5)
+          },
+          {
+            teamId: 5,
+            title: "Team 5",
+            players: getRandomPlayers(5)
+          }
+        ];
+        setTeamData(initialData);
+        await syncScoresToSupabase(initialData);
+      }
+      
+      // Set up realtime listener
+      initializeSupabaseListener();
+      
+      // Test realtime setup
+      setTimeout(async () => {
+        console.log('🧪 Testing realtime setup...');
+        
+        // Test basic Supabase connection
+        try {
+          const { data: testData, error: testError } = await supabase
+            .from('scores')
+            .select('id, last_updated')
+            .eq('id', 1)
+            .single();
+          
+          if (testError) {
+            console.error('❌ Basic Supabase test failed:', testError);
+            return;
+          } else {
+            console.log('✅ Basic Supabase test passed:', testData);
+          }
+          
+          // Test realtime connection
+          console.log('🧪 Testing realtime connection...');
+          const testChannel = supabase.channel('test-connection');
+          
+          testChannel.subscribe((status) => {
+            console.log('🧪 Test channel status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('✅ Realtime connection test passed');
+              testChannel.unsubscribe();
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error('❌ Realtime connection test failed');
+              testChannel.unsubscribe();
+            }
+          });
+          
+        } catch (err) {
+          console.error('❌ Realtime test error:', err);
+        }
+      }, 2000);
+    };
+    
+    initializeData();
+    
+    return () => {
+      // Cleanup subscription on unmount
+      supabase.removeAllChannels();
+    };
   }, []);
 
   // Update player score function
-  const updatePlayerScore = (teamId, playerId, newScore) => {
+  const updatePlayerScore = async (teamId, playerId, newScore) => {
     // Find the current team and player to get old score
     const currentTeam = teamData.find(team => team.teamId === teamId);
     const currentPlayer = currentTeam?.players.find(player => player.id === playerId);
@@ -149,8 +330,11 @@ const App = () => {
       }, 1000);
     }
     
+    // Update local state immediately (instant UI)
     setTeamData(updatedData);
-    saveScores(updatedData);
+    
+    // Sync to Supabase (async, don't block UI)
+    syncScoresToSupabase(updatedData);
   };
 
   // Row titles for the left side
