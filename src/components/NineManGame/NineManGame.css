@@ -1,0 +1,196 @@
+/* 9man Game Styles */
+.nine-man-game-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ffffff; /* Changed to white background */
+  z-index: 1000;
+}
+
+.nine-man-game {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.player-sprite,
+.ball-sprite,
+.drink-sprite {
+  position: absolute;
+  transition: none;
+}
+
+.player-sprite img,
+.ball-sprite img,
+.drink-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.player-sprite {
+  width: 200px; /* Further enlarged from 60px */
+  height: 200px; /* Further enlarged from 60px */
+  z-index: 3;
+}
+
+.ball-sprite {
+  width: 80px;
+  height: 80px;
+  z-index: 2;
+}
+
+.drink-sprite {
+  width: 20px;
+  height: 20px;
+  z-index: 2;
+  animation: drinkGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes drinkGlow {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.score-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 8rem;
+  font-weight: bold;
+  color: #000000; /* Changed to black for white background */
+  text-shadow: 2px 2px 0px #ffffff; /* Changed shadow to white */
+  z-index: 1;
+  pointer-events: none;
+  text-align: center;
+  line-height: 1;
+}
+
+.game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  z-index: 4;
+}
+
+.game-over p {
+  margin: 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.game-over button {
+  background: #f5f5f5;
+  color: #333333;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.game-over button:hover {
+  background: #e5e5e5;
+  transform: translateY(-1px);
+}
+
+/* Mobile styles for 9man game */
+@media (max-width: 768px) {
+  .score-display {
+    font-size: 6rem;
+  }
+  
+  .player-sprite {
+    width: 70px; /* Further enlarged from 50px */
+    height: 70px; /* Further enlarged from 50px */
+  }
+  
+  .ball-sprite,
+  .drink-sprite {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Hamburger Menu Styles for 9man Game */
+.hamburger-menu {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  z-index: 1001;
+}
+
+.hamburger-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  width: 24px;
+  height: 18px;
+  justify-content: space-between;
+}
+
+.hamburger-icon span {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background-color: #333333;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-button:hover .hamburger-icon span {
+  background-color: #666666;
+}
+
+/* Reset Button Styles */
+.reset-button-container {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 1001;
+}
+
+.reset-button {
+  background: #f5f5f5;
+  color: #333333;
+  border: 2px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.reset-button:hover {
+  background: #e5e5e5;
+  border-color: #333333;
+  transform: translateY(-1px);
+}

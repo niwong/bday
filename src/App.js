@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import './App.css';
 import PlayerCard from './components/PlayerCard';
+import NineManGame from './components/NineManGame/NineManGame';
 import likersData from './extracted_likers.json';
 
 const App = () => {
   // State management for modes
-  const [currentMode, setCurrentMode] = useState('olympics'); // 'olympics', 'fantasy', 'car'
+  const [currentMode, setCurrentMode] = useState('olympics'); // 'olympics', 'fantasy', 'car', '9man'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
   const [showGame1Popup, setShowGame1Popup] = useState(false);
@@ -13,6 +14,7 @@ const App = () => {
   const [showGame3Popup, setShowGame3Popup] = useState(false);
   const [showGame4Popup, setShowGame4Popup] = useState(false);
   const [showGame5Popup, setShowGame5Popup] = useState(false);
+  const [showNineManPopup, setShowNineManPopup] = useState(false);
 
   // Memoized data generation to prevent refresh on mode changes
   const teamData = useMemo(() => {
@@ -116,6 +118,9 @@ const App = () => {
   const changeMode = (mode) => {
     setCurrentMode(mode);
     setIsMenuOpen(false);
+    if (mode === '9man') {
+      setShowNineManPopup(true);
+    }
   };
 
   return (
@@ -307,6 +312,34 @@ const App = () => {
           </div>
         </div>
       )}
+
+      {/* 9man Mode Popup */}
+      {showNineManPopup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="game-image">
+                <img src="/images/player.png" alt="9man Mode" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">9man Mode</p>
+                <p className="game-description">
+                  This mode is intended for web browser only.
+                </p>
+                <p className="game-description">
+                  Use WASD to move and spacebar to jump. Keep the ball up!
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowNineManPopup(false)}
+                >
+                  start game
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <header className="app-header">
         <h1>{currentMode === 'fantasy' ? 'Fantasy Draft' : "Nicholas' Bday Olympics"}</h1>
@@ -343,6 +376,12 @@ const App = () => {
               >
                 Fantasy Draft
               </button>
+              <button 
+                className={`menu-item ${currentMode === '9man' ? 'active' : ''}`}
+                onClick={() => changeMode('9man')}
+              >
+                9man Mode
+              </button>
             </div>
           )}
         </div>
@@ -364,6 +403,8 @@ const App = () => {
               <p className="coming-soon-subtitle">Fantasy Draft mode is under development</p>
             </div>
           </div>
+        ) : currentMode === '9man' ? (
+          <NineManGame onExit={() => changeMode('olympics')} />
         ) : (
           <div className="dashboard-container">
             {/* Games header for mobile */}
