@@ -240,7 +240,7 @@ const App = () => {
   };
 
   const handlePasswordSubmit = () => {
-    const correctPassword = process.env.REACT_APP_ADMIN_PASSWORD || 'admin123';
+    const correctPassword = process.env.REACT_APP_ADMIN_PASSWORD;
     if (passwordInput === correctPassword) {
       setIsAdminMode(true);
       setShowPasswordPrompt(false);
