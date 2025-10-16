@@ -446,25 +446,57 @@ const App = () => {
     setSelectedSlotIndex(null);
   };
 
+  // Handle drag and drop reordering
+  const handlePlayerDrop = async (dragData, dropTarget) => {
+    const { playerId: dragPlayerId, teamId: dragTeamId, playerIndex: dragIndex, playerData } = dragData;
+    const { teamId: dropTeamId, playerIndex: dropIndex } = dropTarget;
+
+    // Only allow reordering within the same team
+    if (dragTeamId !== dropTeamId) {
+      return;
+    }
+
+    // Don't allow dropping on the same position
+    if (dragIndex === dropIndex) {
+      return;
+    }
+
+    const updatedData = teamData.map(team => {
+      if (team.teamId === dragTeamId) {
+        const newPlayers = [...team.players];
+        
+        // Perform a true swap: Player A takes Player B's spot, Player B takes Player A's spot
+        const draggedPlayer = newPlayers[dragIndex];
+        const targetPlayer = newPlayers[dropIndex];
+        
+        // Swap the players
+        newPlayers[dragIndex] = targetPlayer;
+        newPlayers[dropIndex] = draggedPlayer;
+        
+        return {
+          ...team,
+          players: newPlayers
+        };
+      }
+      return team;
+    });
+
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+  };
+
   // Row titles for the left side
   const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
 
-  // Sort teams based on total scores and sort players within teams
+  // Sort teams based on total scores and maintain player order within teams
   const sortedTeams = useMemo(() => {
     if (!teamData.length) return [];
     
-    // Calculate total scores for each team and sort players within teams
+    // Calculate total scores for each team and maintain player order
     const teamsWithTotals = teamData.map(team => {
-      // Sort players: filled cards first, empty cards at bottom
-      const sortedPlayers = [...team.players].sort((a, b) => {
-        if (a.isEmpty && !b.isEmpty) return 1; // Empty cards go to bottom
-        if (!a.isEmpty && b.isEmpty) return -1; // Filled cards go to top
-        return 0; // Maintain order within same type
-      });
-      
       return {
         ...team,
-        players: sortedPlayers,
+        players: [...team.players], // Maintain original order for drag-and-drop
         totalScore: team.players.reduce((sum, player) => sum + player.score, 0)
       };
     });
@@ -941,9 +973,15 @@ const App = () => {
                           profilePicUrl={player.profilePicUrl}
                           isAdminMode={isAdminMode}
                           isEmpty={player.isEmpty}
+                          playerId={player.id}
+                          teamId={team.teamId}
+                          playerIndex={index}
                           onScoreUpdate={(newScore) => updatePlayerScore(team.teamId, player.id, newScore)}
                           onRemove={() => handlePlayerRemove(team.teamId, player.id)}
                           onAdd={() => handlePlayerAdd(team.teamId, player.id)}
+                          onDragStart={() => {}}
+                          onDragOver={() => {}}
+                          onDrop={handlePlayerDrop}
                         />
                       ))}
                     </div>

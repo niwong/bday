@@ -22,6 +22,27 @@
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
 }
 
+/* Drag and drop styles */
+.player-card.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  z-index: 1000;
+}
+
+.player-card.drag-over {
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  background-color: #f8f9ff;
+}
+
+.player-card[draggable="true"] {
+  cursor: grab;
+}
+
+.player-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 /* Empty card styles */
 .player-card.empty {
   background-color: #f8f9fa;

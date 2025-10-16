@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PlayerCard.css';
 
-const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty, onScoreUpdate, onRemove, onAdd }) => {
+const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty, onScoreUpdate, onRemove, onAdd, onDragStart, onDragOver, onDrop, playerId, teamId, playerIndex }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(score.toString());
 
@@ -26,6 +26,50 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
     e.stopPropagation();
     if (isAdminMode && isEmpty && onAdd) {
       onAdd();
+    }
+  };
+
+  // Handle drag start
+  const handleDragStart = (e) => {
+    if (isAdminMode && !isEmpty) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({
+        playerId,
+        teamId,
+        playerIndex,
+        playerData: { name, ranking, score, profilePicUrl, isEmpty }
+      }));
+      e.dataTransfer.effectAllowed = 'move';
+      e.target.classList.add('dragging');
+    }
+  };
+
+  // Handle drag end
+  const handleDragEnd = (e) => {
+    e.target.classList.remove('dragging');
+  };
+
+  // Handle drag over
+  const handleDragOver = (e) => {
+    if (isAdminMode && onDragOver) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.target.classList.add('drag-over');
+    }
+  };
+
+  // Handle drag leave
+  const handleDragLeave = (e) => {
+    e.target.classList.remove('drag-over');
+  };
+
+  // Handle drop
+  const handleDrop = (e) => {
+    if (isAdminMode && onDrop) {
+      e.preventDefault();
+      e.target.classList.remove('drag-over');
+      
+      const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      onDrop(dragData, { playerId, teamId, playerIndex });
     }
   };
 
@@ -87,6 +131,12 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
     <div 
       className={`player-card ${isAdminMode ? 'admin-mode' : ''} ${isEmpty ? 'empty' : ''}`}
       onDoubleClick={handleDoubleClick}
+      draggable={isAdminMode && !isEmpty}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       {/* Remove button (X icon) - only show on hover for filled cards */}
       {isAdminMode && !isEmpty && (
