@@ -311,6 +311,14 @@ const App = () => {
       <header className="app-header">
         <h1>{currentMode === 'fantasy' ? 'Fantasy Draft' : "Nicholas' Bday Olympics"}</h1>
         
+        {/* Intro Button */}
+        <button 
+          className="intro-button"
+          onClick={() => setShowWelcomePopup(true)}
+        >
+          Intro
+        </button>
+
         {/* Hamburger Menu */}
         <div className="hamburger-menu">
           <button className="hamburger-button" onClick={toggleMenu}>
