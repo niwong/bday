@@ -12,6 +12,15 @@
   transform: translateY(-2px);
 }
 
+.player-card.admin-mode {
+  cursor: pointer;
+}
+
+.player-card.admin-mode:hover {
+  border-color: #ff6b6b;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+}
+
 .player-info {
   display: flex;
   align-items: center;
@@ -41,6 +50,34 @@
   color: #666666;
   font-size: 0.875rem;
   font-weight: 400;
+}
+
+.player-score-input {
+  color: #333333;
+  font-size: 0.875rem;
+  font-weight: 400;
+  border: 2px solid #ff6b6b;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  width: 60px;
+  background-color: #ffffff;
+  outline: none;
+}
+
+.player-score-input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+}
+
+/* Remove increment/decrement arrows */
+.player-score-input::-webkit-outer-spin-button,
+.player-score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.player-score-input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .profile-picture {

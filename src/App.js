@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './App.css';
 import PlayerCard from './components/PlayerCard';
 import likersData from './extracted_likers.json';
@@ -13,53 +13,168 @@ const App = () => {
   const [showGame3Popup, setShowGame3Popup] = useState(false);
   const [showGame4Popup, setShowGame4Popup] = useState(false);
   const [showGame5Popup, setShowGame5Popup] = useState(false);
+  
+  // Admin mode state
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  
+  // Team highlight state for score changes
+  const [teamHighlights, setTeamHighlights] = useState({});
 
-  // Memoized data generation to prevent refresh on mode changes
-  const teamData = useMemo(() => {
-    // Function to randomly select players from likers data
-    const getRandomPlayers = (count) => {
-      const shuffled = [...likersData].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count).map((liker, index) => ({
-        id: index + 1,
-        name: liker.name,
-        ranking: index + 1,
-        score: Math.random() * 2 + 3, // Random score between 3.0 and 5.0
-        profilePicUrl: liker.profile_pic_url
-      }));
-    };
+  // Team data state (replaced useMemo with useState for persistence)
+  const [teamData, setTeamData] = useState([]);
 
-    // Generate team data with random players from likers
-    return [
-      {
-        teamId: 1,
-        title: "Team 1",
-        players: getRandomPlayers(5)
-      },
-      {
-        teamId: 2,
-        title: "Team 2", 
-        players: getRandomPlayers(5)
-      },
-      {
-        teamId: 3,
-        title: "Team 3",
-        players: getRandomPlayers(5)
-      },
-      {
-        teamId: 4,
-        title: "Team 4",
-        players: getRandomPlayers(5)
-      },
-      {
-        teamId: 5,
-        title: "Team 5",
-        players: getRandomPlayers(5)
+  // Data persistence functions (Firebase-ready)
+  const loadScores = () => {
+    try {
+      const saved = localStorage.getItem('birthday-olympics-scores');
+      if (saved) {
+        return JSON.parse(saved);
       }
-    ];
-  }, []); // Empty dependency array means this only runs once
+    } catch (error) {
+      console.error('Error loading scores:', error);
+    }
+    return null;
+  };
+
+  const saveScores = (scores) => {
+    try {
+      localStorage.setItem('birthday-olympics-scores', JSON.stringify(scores));
+    } catch (error) {
+      console.error('Error saving scores:', error);
+    }
+  };
+
+  // Function to randomly select players from likers data
+  const getRandomPlayers = (count) => {
+    const shuffled = [...likersData].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count).map((liker, index) => ({
+      id: index + 1,
+      name: liker.name,
+      ranking: index + 1,
+      score: Math.random() * 2 + 3, // Random score between 3.0 and 5.0
+      profilePicUrl: liker.profile_pic_url
+    }));
+  };
+
+  // Initialize team data on component mount
+  useEffect(() => {
+    const savedData = loadScores();
+    if (savedData) {
+      setTeamData(savedData);
+    } else {
+      // Generate initial team data
+      const initialData = [
+        {
+          teamId: 1,
+          title: "Team 1",
+          players: getRandomPlayers(5)
+        },
+        {
+          teamId: 2,
+          title: "Team 2", 
+          players: getRandomPlayers(5)
+        },
+        {
+          teamId: 3,
+          title: "Team 3",
+          players: getRandomPlayers(5)
+        },
+        {
+          teamId: 4,
+          title: "Team 4",
+          players: getRandomPlayers(5)
+        },
+        {
+          teamId: 5,
+          title: "Team 5",
+          players: getRandomPlayers(5)
+        }
+      ];
+      setTeamData(initialData);
+      saveScores(initialData);
+    }
+  }, []);
+
+  // Update player score function
+  const updatePlayerScore = (teamId, playerId, newScore) => {
+    // Find the current team and player to get old score
+    const currentTeam = teamData.find(team => team.teamId === teamId);
+    const currentPlayer = currentTeam?.players.find(player => player.id === playerId);
+    const oldScore = currentPlayer?.score || 0;
+    
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        return {
+          ...team,
+          players: team.players.map(player => 
+            player.id === playerId 
+              ? { ...player, score: Math.round(Math.max(0, Math.min(5, parseFloat(newScore) || 0)) * 100) / 100 }
+              : player
+          )
+        };
+      }
+      return team;
+    });
+    
+    // Calculate old and new team totals
+    const oldTeamTotal = currentTeam?.players.reduce((sum, player) => sum + player.score, 0) || 0;
+    const newTeamTotal = updatedData.find(team => team.teamId === teamId)?.players.reduce((sum, player) => sum + player.score, 0) || 0;
+    
+    // Determine highlight color based on score change
+    let highlightColor = null;
+    if (newTeamTotal > oldTeamTotal) {
+      highlightColor = 'green';
+    } else if (newTeamTotal < oldTeamTotal) {
+      highlightColor = 'red';
+    }
+    
+    // Apply highlight if there's a change
+    if (highlightColor) {
+      setTeamHighlights(prev => ({
+        ...prev,
+        [teamId]: highlightColor
+      }));
+      
+      // Remove highlight after animation duration
+      setTimeout(() => {
+        setTeamHighlights(prev => {
+          const newHighlights = { ...prev };
+          delete newHighlights[teamId];
+          return newHighlights;
+        });
+      }, 1000);
+    }
+    
+    setTeamData(updatedData);
+    saveScores(updatedData);
+  };
 
   // Row titles for the left side
   const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
+
+  // Sort teams based on total scores
+  const sortedTeams = useMemo(() => {
+    if (!teamData.length) return [];
+    
+    // Calculate total scores for each team
+    const teamsWithTotals = teamData.map(team => ({
+      ...team,
+      totalScore: team.players.reduce((sum, player) => sum + player.score, 0)
+    }));
+    
+    // Check if all teams have 0 points
+    const allZeroPoints = teamsWithTotals.every(team => team.totalScore === 0);
+    
+    if (allZeroPoints) {
+      // When all teams have 0 points, maintain original order (Team 1-5)
+      return teamsWithTotals;
+    } else {
+      // Sort by total score (highest first)
+      return [...teamsWithTotals].sort((a, b) => b.totalScore - a.totalScore);
+    }
+  }, [teamData]);
 
   // Memoized Fantasy Draft data - 10 teams, 6 rounds visible
   // COMMENTED OUT - Fantasy mode temporarily disabled
@@ -118,8 +233,64 @@ const App = () => {
     setIsMenuOpen(false);
   };
 
+  // Admin authentication functions
+  const handleAdminModeClick = () => {
+    setShowPasswordPrompt(true);
+    setIsMenuOpen(false);
+  };
+
+  const handlePasswordSubmit = () => {
+    const correctPassword = process.env.REACT_APP_ADMIN_PASSWORD || 'admin123';
+    if (passwordInput === correctPassword) {
+      setIsAdminMode(true);
+      setShowPasswordPrompt(false);
+      setPasswordInput('');
+    } else {
+      alert('Incorrect password');
+      setPasswordInput('');
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordPrompt(false);
+    setPasswordInput('');
+  };
+
+  const exitAdminMode = () => {
+    setIsAdminMode(false);
+  };
+
   return (
     <div className="app">
+      {/* Admin Banner */}
+      {isAdminMode && (
+        <div className="admin-banner">
+          <span>Admin Mode Active</span>
+          <button onClick={exitAdminMode} className="exit-admin-btn">Exit Admin</button>
+        </div>
+      )}
+
+      {/* Password Prompt Modal */}
+      {showPasswordPrompt && (
+        <div className="password-prompt-overlay">
+          <div className="password-prompt">
+            <h3>Enter Admin Password</h3>
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              placeholder="Password"
+              autoFocus
+            />
+            <div className="password-buttons">
+              <button onClick={handlePasswordSubmit} className="password-submit">Submit</button>
+              <button onClick={handlePasswordCancel} className="password-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Popup */}
       {showWelcomePopup && (
         <div className="welcome-popup-overlay">
@@ -343,6 +514,12 @@ const App = () => {
               >
                 Fantasy Draft
               </button>
+              <button 
+                className={`menu-item ${isAdminMode ? 'active' : ''}`}
+                onClick={handleAdminModeClick}
+              >
+                Admin Mode
+              </button>
             </div>
           )}
         </div>
@@ -399,10 +576,9 @@ const App = () => {
             
             {/* Teams container */}
             <div className="teams-container">
-              {teamData.map((team) => {
-                const teamTotal = team.players.reduce((sum, player) => sum + player.score, 0);
+              {sortedTeams.map((team) => {
                 return (
-                  <div key={team.teamId} className="team-column">
+                  <div key={team.teamId} className={`team-column ${teamHighlights[team.teamId] ? `team-highlight-${teamHighlights[team.teamId]}` : ''}`}>
                     <h2 className="team-title">{team.title}</h2>
                     <div className="players-container">
                       {team.players.map((player) => (
@@ -412,12 +588,14 @@ const App = () => {
                           ranking={player.ranking}
                           score={player.score}
                           profilePicUrl={player.profilePicUrl}
+                          isAdminMode={isAdminMode}
+                          onScoreUpdate={(newScore) => updatePlayerScore(team.teamId, player.id, newScore)}
                         />
                       ))}
                     </div>
                     <div className="team-total">
                       <span className="total-label">Total:</span>
-                      <span className="total-score">{teamTotal.toFixed(1)}/25.0</span>
+                      <span className="total-score">{team.totalScore.toFixed(2)}/25.00</span>
                     </div>
                   </div>
                 );
