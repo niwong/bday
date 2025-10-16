@@ -742,10 +742,14 @@ const App = () => {
               <div className="game-text">
                 <p className="game-title">Game 4: Coffee</p>
                 <p className="game-description">
-                  Love me some coffee.
+                  Every morning, I dose out my 15g of beans into my fancy little coffee robot.
+                  I take the deeeeepest rip of that fresh joe, and I'm ready to tear it up.
                 </p>
                 <p className="game-description">
-                  Who can make the best cup of joe?
+                  i think i have a problem...
+                </p>
+                <p className="game-description">
+                  let's see who can make the best cup of joe. (unfair cause i live with a coffee mechanic and fanatic [ethan])
                 </p>
                 <button 
                   className="game-close-button"
@@ -768,18 +772,21 @@ const App = () => {
                 <img src="/images/nick.png" alt="Game 5 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
-                <p className="game-title">Game 5: Nick Trivia</p>
+                <p className="game-title">Game 5: Nick Trivia!</p>
                 <p className="game-description">
-                  Placeholder text for Game 5. This will be updated with the actual game description.
+                  Self explanatory. Totally not a test to see who knows me best...
                 </p>
                 <p className="game-description">
-                  More placeholder content will go here.
+                  I only care about the winners... and the losers.
+                </p>
+                <p className="game-description">
+                  it'd be awk if u came in last... might just wanna go home aft.
                 </p>
                 <button 
                   className="game-close-button"
                   onClick={() => setShowGame5Popup(false)}
                 >
-                  understood
+                  whatever, kid
                 </button>
               </div>
             </div>

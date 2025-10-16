@@ -1,8 +1,26 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import './PlayerSelectionModal.css';
 
 const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) => {
-  if (!isOpen) return null;
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter players based on search term
+  const filteredPlayers = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return availablePlayers;
+    }
+    
+    return availablePlayers.filter(player =>
+      player.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [availablePlayers, searchTerm]);
+
+  // Reset search when modal closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen]);
 
   // Generate initials from name
   const getInitials = (name) => {
@@ -38,6 +56,8 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="player-modal-overlay" onClick={handleOverlayClick}>
       <div className="player-modal">
@@ -48,15 +68,36 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
           </button>
         </div>
         
+        {/* Search Box */}
+        <div className="player-modal-search">
+          <input
+            type="text"
+            placeholder="Search players..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+            autoFocus
+          />
+        </div>
+        
         <div className="player-modal-content">
-          {availablePlayers.length === 0 ? (
+          {filteredPlayers.length === 0 ? (
             <div className="no-players-message">
-              <p>No available players to add.</p>
-              <p>All players are already on teams.</p>
+              {searchTerm.trim() ? (
+                <>
+                  <p>No players found matching "{searchTerm}".</p>
+                  <p>Try a different search term.</p>
+                </>
+              ) : (
+                <>
+                  <p>No available players to add.</p>
+                  <p>All players are already on teams.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="players-grid">
-              {availablePlayers.map((player, index) => (
+              {filteredPlayers.map((player, index) => (
                 <div
                   key={`${player.name}-${index}`}
                   className="player-option"
