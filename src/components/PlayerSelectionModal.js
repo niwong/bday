@@ -10,9 +10,10 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
       return availablePlayers;
     }
     
-    return availablePlayers.filter(player =>
-      player.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return availablePlayers.filter(player => {
+      const name = player.full_name || player.username || player.name;
+      return name.toLowerCase().includes(searchTerm.toLowerCase());
+    });
   }, [availablePlayers, searchTerm]);
 
   // Reset search when modal closes
@@ -24,6 +25,9 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
 
   // Generate initials from name
   const getInitials = (name) => {
+    if (!name || typeof name !== 'string') {
+      return '??';
+    }
     return name
       .split(' ')
       .map(word => word.charAt(0))
@@ -34,6 +38,9 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
 
   // Generate a background color based on the name
   const getBackgroundColor = (name) => {
+    if (!name || typeof name !== 'string') {
+      return '#CCCCCC'; // Default gray color for invalid names
+    }
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
       '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
@@ -97,34 +104,37 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
             </div>
           ) : (
             <div className="players-grid">
-              {filteredPlayers.map((player, index) => (
-                <div
-                  key={`${player.name}-${index}`}
-                  className="player-option"
-                  onClick={() => handlePlayerClick(player)}
-                >
-                  <div 
-                    className="player-option-avatar"
-                    style={{ backgroundColor: getBackgroundColor(player.name) }}
+              {filteredPlayers.map((player, index) => {
+                const playerName = player.full_name || player.username || player.name;
+                return (
+                  <div
+                    key={`${playerName}-${index}`}
+                    className="player-option"
+                    onClick={() => handlePlayerClick(player)}
                   >
-                    {player.profile_pic_url ? (
-                      <img 
-                        src={player.profile_pic_url} 
-                        alt={player.name}
-                        className="player-option-image"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div className="player-option-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
-                      {getInitials(player.name)}
+                    <div 
+                      className="player-option-avatar"
+                      style={{ backgroundColor: getBackgroundColor(playerName) }}
+                    >
+                      {player.profile_pic_url ? (
+                        <img 
+                          src={player.profile_pic_url} 
+                          alt={playerName}
+                          className="player-option-image"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className="player-option-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
+                        {getInitials(playerName)}
+                      </div>
                     </div>
+                    <div className="player-option-name">{playerName}</div>
                   </div>
-                  <div className="player-option-name">{player.name}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

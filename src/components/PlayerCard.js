@@ -105,6 +105,9 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
 
   // Generate initials from name
   const getInitials = (name) => {
+    if (!name || typeof name !== 'string') {
+      return '??';
+    }
     return name
       .split(' ')
       .map(word => word.charAt(0))
@@ -115,6 +118,9 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
 
   // Generate a background color based on the name
   const getBackgroundColor = (name) => {
+    if (!name || typeof name !== 'string') {
+      return '#CCCCCC'; // Default gray color for invalid names
+    }
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
       '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',

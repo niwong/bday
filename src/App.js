@@ -3,7 +3,7 @@ import './App.css';
 import PlayerCard from './components/PlayerCard';
 import PlayerSelectionModal from './components/PlayerSelectionModal';
 import NineManGame from './components/NineManGame/NineManGame';
-import likersData from './extracted_likers.json';
+import mutualsData from './mutuals.json';
 import { supabase } from './supabase';
 
 const App = () => {
@@ -163,15 +163,15 @@ const App = () => {
     }
   };
 
-  // Function to randomly select players from likers data
+  // Function to randomly select players from mutuals data
   const getRandomPlayers = (count) => {
-    const shuffled = [...likersData].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count).map((liker, index) => ({
+    const shuffled = [...mutualsData].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count).map((mutual, index) => ({
       id: index + 1,
-      name: liker.name,
+      name: mutual.full_name || mutual.username,
       ranking: index + 1,
       score: Math.round(Math.random() * 10) / 10, // Random score rounded to one decimal place
-      profilePicUrl: liker.profile_pic_url,
+      profilePicUrl: mutual.profile_pic_url,
       isEmpty: false
     }));
   };
@@ -384,8 +384,8 @@ const App = () => {
       });
     });
     
-    // Filter likers data to exclude players already on teams
-    return likersData.filter(liker => !playersOnTeams.has(liker.name));
+    // Filter mutuals data to exclude players already on teams
+    return mutualsData.filter(mutual => !playersOnTeams.has(mutual.full_name || mutual.username));
   };
 
   // Remove player from team (replace with empty slot)
@@ -422,7 +422,7 @@ const App = () => {
         newPlayers[slotIndex] = {
           id: Date.now() + Math.random(), // Generate unique ID
           isEmpty: false,
-          name: playerData.name,
+          name: playerData.full_name || playerData.username || playerData.name,
           score: 0, // Start with 0 score
           profilePicUrl: playerData.profile_pic_url,
           ranking: 1 // Default ranking
@@ -499,7 +499,8 @@ const App = () => {
     
     teamMakerPlayers.forEach((player, index) => {
       if (player) {
-        message += `${gameNames[index]}: ${player.name}\n`;
+        const playerName = player.full_name || player.username || player.name || 'Unknown Player';
+        message += `${gameNames[index]}: ${playerName}\n`;
       }
     });
     
@@ -603,15 +604,15 @@ const App = () => {
   // COMMENTED OUT - Fantasy mode temporarily disabled
   /*
   const fantasyData = useMemo(() => {
-    // Function to randomly select players from likers data (for fantasy draft)
+    // Function to randomly select players from mutuals data (for fantasy draft)
     const getRandomPlayers = (count) => {
-      const shuffled = [...likersData].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count).map((liker, index) => ({
+      const shuffled = [...mutualsData].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count).map((mutual, index) => ({
         id: index + 1,
-        name: liker.name,
+        name: mutual.full_name || mutual.username,
         ranking: index + 1,
         score: Math.random() * 2 + 3, // Random score between 3.0 and 5.0
-        profilePicUrl: liker.profile_pic_url
+        profilePicUrl: mutual.profile_pic_url
       }));
     };
 
@@ -1110,7 +1111,7 @@ const App = () => {
                                   {player.profile_pic_url ? (
                                     <img 
                                       src={player.profile_pic_url} 
-                                      alt={player.name}
+                                      alt={player.full_name || player.username || player.name || 'Player'}
                                       className="wizard-player-image"
                                       onError={(e) => {
                                         e.target.style.display = 'none';
@@ -1119,10 +1120,10 @@ const App = () => {
                                     />
                                   ) : null}
                                     <div className="wizard-player-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
-                                      {player.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
+                                      {(player.full_name || player.username || player.name || 'Unknown').split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
                                     </div>
                                   </div>
-                                  <div className="wizard-player-name">{player.name}</div>
+                                  <div className="wizard-player-name">{player.full_name || player.username || player.name || 'Unknown Player'}</div>
                                   <button 
                                     className="wizard-remove-btn"
                                     onClick={() => handleTeamMakerPlayerRemove(index)}
@@ -1243,7 +1244,7 @@ const App = () => {
         isOpen={showPlayerModal}
         onSelect={currentMode === 'teammaker' ? handleTeamMakerPlayerAdd : handlePlayerSelect}
         onClose={handlePlayerModalClose}
-        availablePlayers={currentMode === 'teammaker' ? likersData : getAvailablePlayers()}
+        availablePlayers={currentMode === 'teammaker' ? mutualsData : getAvailablePlayers()}
       />
 
       {/* Floating Car Mode Button */}
