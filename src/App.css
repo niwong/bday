@@ -561,7 +561,6 @@ body.modal-open {
   justify-content: center;
   left: -110px;
   z-index: 1000;
-  border-radius: 50%;
   overflow: hidden;
   width: 250px;
   height: 250px;
@@ -587,7 +586,6 @@ body.modal-open {
   justify-content: center;
   left: -110px;
   z-index: 1000;
-  border-radius: 50%;
   overflow: hidden;
   width: 250px;
   height: 250px;

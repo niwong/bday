@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './PlayerCard.css';
 
-const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty, onScoreUpdate, onRemove, onAdd, onDragStart, onDragOver, onDrop, playerId, teamId, playerIndex }) => {
+const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty, isCaptain, onScoreUpdate, onRemove, onAdd, onSetCaptain, onDragStart, onDragOver, onDrop, playerId, teamId, playerIndex }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(score.toString());
 
@@ -103,6 +103,14 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
     }
   };
 
+  // Handle crown button click
+  const handleCrownClick = (e) => {
+    e.stopPropagation();
+    if (onSetCaptain) {
+      onSetCaptain();
+    }
+  };
+
   // Generate initials from name
   const getInitials = (name) => {
     if (!name || typeof name !== 'string') {
@@ -166,6 +174,17 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
         </button>
       )}
 
+      {/* Crown button - only show on hover for filled cards in admin mode */}
+      {isAdminMode && !isEmpty && !isCaptain && (
+        <button 
+          className="crown-button"
+          onClick={handleCrownClick}
+          title="Make captain"
+        >
+          👑
+        </button>
+      )}
+
       <div className="player-info">
         <div 
           className="profile-picture"
@@ -186,6 +205,10 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
             {isEmpty ? '?' : getInitials(name)}
           </div>
         </div>
+        {/* Captain crown - positioned relative to player-info container */}
+        {isCaptain && !isEmpty && (
+          <div className="captain-crown">👑</div>
+        )}
         <div className="player-details">
           <h3 className="player-name">{isEmpty ? 'Empty Slot' : name}</h3>
           {!isEmpty && isEditing ? (

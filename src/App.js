@@ -31,6 +31,10 @@ const App = () => {
   // Team highlight state for score changes
   const [teamHighlights, setTeamHighlights] = useState({});
   const [showNineManPopup, setShowNineManPopup] = useState(false);
+  
+  // Team name editing state
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [editingTeamName, setEditingTeamName] = useState('');
 
   // Team data state (replaced useMemo with useState for persistence)
   const [teamData, setTeamData] = useState([]);
@@ -236,26 +240,31 @@ const App = () => {
           {
             teamId: 1,
             title: "Team 1",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 2,
-            title: "Team 2", 
+            title: "Team 2",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 3,
             title: "Team 3",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 4,
             title: "Team 4",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 5,
             title: "Team 5",
+            captainId: null,
             players: getRandomPlayers(5)
           }
         ];
@@ -531,6 +540,70 @@ const App = () => {
     
     // For now, use email since we don't have phone number
     window.location.href = emailLink;
+  };
+
+  // Set team captain
+  const setCaptain = async (teamId, playerId) => {
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        return {
+          ...team,
+          captainId: playerId
+        };
+      }
+      return team;
+    });
+    
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+  };
+
+  // Update team name
+  const updateTeamName = async (teamId, newName) => {
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        return {
+          ...team,
+          title: newName.trim() || team.title // Fallback to current title if empty
+        };
+      }
+      return team;
+    });
+    
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+  };
+
+  // Handle team name double-click to start editing
+  const handleTeamNameDoubleClick = (teamId, currentName) => {
+    if (isAdminMode) {
+      setEditingTeamId(teamId);
+      setEditingTeamName(currentName);
+    }
+  };
+
+  // Handle team name save
+  const handleTeamNameSave = async () => {
+    if (editingTeamId && editingTeamName.trim()) {
+      await updateTeamName(editingTeamId, editingTeamName);
+    }
+    setEditingTeamId(null);
+    setEditingTeamName('');
+  };
+
+  // Handle team name cancel
+  const handleTeamNameCancel = () => {
+    setEditingTeamId(null);
+    setEditingTeamName('');
+  };
+
+  // Handle team name key press
+  const handleTeamNameKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleTeamNameSave();
+    } else if (e.key === 'Escape') {
+      handleTeamNameCancel();
+    }
   };
 
   // Handle drag and drop reordering
@@ -888,7 +961,7 @@ const App = () => {
           <div className="game-popup">
             <div className="game-content">
               <div className="game5-image">
-                <img src="/images/nick.png" alt="Game 5 placeholder" className="game-image-img" />
+                <img src="/images/nick_as_baby.png" alt="Game 5 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
                 <p className="game-title">Game 5: Nick Trivia!</p>
@@ -919,24 +992,24 @@ const App = () => {
           <div className="game-popup">
             <div className="game-content">
               <div className="bonus-image">
-                <img src="/images/placeholder.svg" alt="Bonus Game" className="game-image-img" />
+                <img src="/images/sharepoint.png" alt="Bonus Game" className="game-image-img" />
               </div>
               <div className="game-text">
-                <p className="game-title">Bonus Game: Secret Challenge</p>
+                <p className="game-title">Bonus Game: Configure a file server</p>
                 <p className="game-description">
                   Complete this challenge if you dare. If you can complete this, text me and Ethan Lee and we'll get u a job.
                 </p>
                 <p className="game-description">
-                  The details of this challenge will be revealed when the time is right...
+                  Configure an on-premise instance of SharePoint 2016 Server and expose its contents over the internet.
                 </p>
                 <p className="game-description">
-                  Stay tuned for more information!
+                  Nick should be provided crednetials to be able to access file contents and perform basic REST operations over the API.
                 </p>
                 <button 
                   className="game-close-button"
                   onClick={() => setShowBonusPopup(false)}
                 >
-                  keep it secret
+                  see more details
                 </button>
               </div>
             </div>
@@ -1204,7 +1277,36 @@ const App = () => {
               {sortedTeams.map((team) => {
                 return (
                   <div key={team.teamId} className={`team-column ${teamHighlights[team.teamId] ? `team-highlight-${teamHighlights[team.teamId]}` : ''}`}>
-                    <h2 className="team-title">{team.title}</h2>
+                    {editingTeamId === team.teamId ? (
+                      <input
+                        type="text"
+                        className="team-title-input"
+                        value={editingTeamName}
+                        onChange={(e) => setEditingTeamName(e.target.value)}
+                        onBlur={handleTeamNameSave}
+                        onKeyDown={handleTeamNameKeyPress}
+                        autoFocus
+                        style={{
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          border: '2px solid #007bff',
+                          borderRadius: '4px',
+                          padding: '8px',
+                          width: '100%',
+                          backgroundColor: '#f8f9fa'
+                        }}
+                      />
+                    ) : (
+                      <h2 
+                        className="team-title"
+                        onDoubleClick={() => handleTeamNameDoubleClick(team.teamId, team.title)}
+                        style={{ cursor: isAdminMode ? 'pointer' : 'default' }}
+                        title={isAdminMode ? 'Double-click to edit team name' : ''}
+                      >
+                        {team.title}
+                      </h2>
+                    )}
                     <div className="players-container">
                       {team.players.map((player, index) => (
                         <PlayerCard
@@ -1215,12 +1317,14 @@ const App = () => {
                           profilePicUrl={player.profilePicUrl}
                           isAdminMode={isAdminMode}
                           isEmpty={player.isEmpty}
+                          isCaptain={player.id === team.captainId}
                           playerId={player.id}
                           teamId={team.teamId}
                           playerIndex={index}
                           onScoreUpdate={(newScore) => updatePlayerScore(team.teamId, player.id, newScore)}
                           onRemove={() => handlePlayerRemove(team.teamId, player.id)}
                           onAdd={() => handlePlayerAdd(team.teamId, player.id)}
+                          onSetCaptain={() => setCaptain(team.teamId, player.id)}
                           onDragStart={() => {}}
                           onDragOver={() => {}}
                           onDrop={handlePlayerDrop}
