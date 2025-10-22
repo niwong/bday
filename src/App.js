@@ -16,6 +16,7 @@ const App = () => {
   const [showGame3Popup, setShowGame3Popup] = useState(false);
   const [showGame4Popup, setShowGame4Popup] = useState(false);
   const [showGame5Popup, setShowGame5Popup] = useState(false);
+  const [showBonusPopup, setShowBonusPopup] = useState(false);
   
   // Admin mode state
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -174,6 +175,25 @@ const App = () => {
       isEmpty: false
     }));
   };
+
+  // Prevent body scrolling when any modal is open
+  useEffect(() => {
+    const isAnyModalOpen = showWelcomePopup || showGame1Popup || showGame2Popup || 
+                          showGame3Popup || showGame4Popup || showGame5Popup || showBonusPopup ||
+                          showPasswordPrompt || showPlayerModal || showNineManPopup;
+    
+    if (isAnyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    // Cleanup function to remove class when component unmounts
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [showWelcomePopup, showGame1Popup, showGame2Popup, showGame3Popup, 
+      showGame4Popup, showGame5Popup, showBonusPopup, showPasswordPrompt, showPlayerModal, showNineManPopup]);
 
   // Initialize team data on component mount
   useEffect(() => {
@@ -552,7 +572,7 @@ const App = () => {
   };
 
   // Row titles for the left side
-  const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
+  const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅", "Shhh 🤫"];
 
   // Sort teams based on total scores and maintain player order within teams
   const sortedTeams = useMemo(() => {
@@ -892,6 +912,37 @@ const App = () => {
         </div>
       )}
 
+      {/* Bonus Game Popup */}
+      {showBonusPopup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="bonus-image">
+                <img src="/images/placeholder.svg" alt="Bonus Game" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">Bonus Game: Secret Challenge</p>
+                <p className="game-description">
+                  Complete this challenge if you dare. If you can complete this, text me and Ethan Lee and we'll get u a job.
+                </p>
+                <p className="game-description">
+                  The details of this challenge will be revealed when the time is right...
+                </p>
+                <p className="game-description">
+                  Stay tuned for more information!
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowBonusPopup(false)}
+                >
+                  keep it secret
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 9man Mode Popup */}
       {showNineManPopup && (
         <div className="game-popup-overlay">
@@ -1128,6 +1179,7 @@ const App = () => {
                     case 2: setShowGame3Popup(true); break;
                     case 3: setShowGame4Popup(true); break;
                     case 4: setShowGame5Popup(true); break;
+                    case 5: setShowBonusPopup(true); break;
                     default: break;
                   }
                 };
