@@ -3,6 +3,13 @@
   background-color: #ffffff;
 }
 
+/* Prevent body scrolling when modals are open */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
 /* Admin Banner */
 .admin-banner {
   position: fixed;
@@ -141,15 +148,19 @@
   padding: 0;
   max-width: 600px;
   width: 100%;
+  max-height: 90vh;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border: 1px solid #e5e5e5;
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
 }
 
 .welcome-content {
   display: flex;
   align-items: center;
   position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .welcome-text {
@@ -157,6 +168,26 @@
   flex: 1;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   margin-left: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.welcome-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.welcome-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.welcome-text::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+.welcome-text::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
 }
 
 .welcome-greeting {
@@ -176,7 +207,22 @@
 }
 
 .welcome-description:last-of-type {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+}
+
+.welcome-close-button {
+  background: #f5f5f5;
+  color: #333333;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  margin-top: 1rem;
+  flex-shrink: 0;
 }
 
 .welcome-car-image {
@@ -216,6 +262,15 @@
 
 /* Mobile styles for welcome popup */
 @media (max-width: 768px) {
+  .welcome-popup-overlay {
+    padding: 1rem;
+  }
+  
+  .welcome-popup {
+    max-height: 95vh;
+    max-width: 100%;
+  }
+  
   .welcome-content {
     flex-direction: column;
     align-items: center;
@@ -225,16 +280,46 @@
     position: relative;
     left: auto;
     margin-bottom: 1rem;
+    flex-shrink: 0;
   }
   
   .car-image {
-    height: 200px;
+    height: 150px;
   }
   
   .welcome-text {
     margin-left: 0;
-    padding: 1rem 2rem;
+    padding: 1rem 1.5rem;
     width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+  }
+  
+  .welcome-text::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .welcome-text::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .welcome-text::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 2px;
+  }
+  
+  .welcome-text::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
+  }
+  
+  .welcome-greeting {
+    font-size: 0.9rem;
+  }
+  
+  .welcome-description {
+    font-size: 0.8rem;
   }
 }
 
@@ -476,7 +561,6 @@
   justify-content: center;
   left: -110px;
   z-index: 1000;
-  border-radius: 50%;
   overflow: hidden;
   width: 250px;
   height: 250px;
@@ -489,6 +573,25 @@
 }
 
 .game5-image .game-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bonus-image {
+  position: absolute;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  left: -110px;
+  z-index: 1000;
+  overflow: hidden;
+  width: 250px;
+  height: 250px;
+}
+
+.bonus-image .game-image-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -523,13 +626,15 @@
   .game2-image,
   .game3-image,
   .game4-image,
-  .game5-image {
+  .game5-image,
+  .bonus-image {
     position: relative;
     left: auto;
     margin-bottom: 1rem;
   }
   
-  .game5-image {
+  .game5-image,
+  .bonus-image {
     width: 160px;
     height: 160px;
   }
@@ -906,15 +1011,19 @@
   }
   
   .row-titles {
-    flex-direction: row;
-    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0.5rem;
     padding-top: 0;
     margin-bottom: 1rem;
+    max-width: 100%;
   }
   
   .row-title {
     text-align: center;
-    padding-right: 0;
+    justify-content: center;
+    padding: 0;
     height: auto;
   }
   
@@ -935,6 +1044,20 @@
   .row-title-mobile:hover {
     background: #e5e5e5;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Style Bonus game as disabled on mobile */
+  .row-title:nth-child(6) .row-title-mobile {
+    background: #f0f0f0;
+    color: #999;
+    border-color: #ddd;
+    opacity: 0.7;
+  }
+  
+  .row-title:nth-child(6) .row-title-mobile:hover {
+    background: #f0f0f0;
+    color: #999;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .games-header-mobile {

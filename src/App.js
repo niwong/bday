@@ -3,7 +3,7 @@ import './App.css';
 import PlayerCard from './components/PlayerCard';
 import PlayerSelectionModal from './components/PlayerSelectionModal';
 import NineManGame from './components/NineManGame/NineManGame';
-import likersData from './extracted_likers.json';
+import mutualsData from './mutuals.json';
 import { supabase } from './supabase';
 
 const App = () => {
@@ -16,6 +16,7 @@ const App = () => {
   const [showGame3Popup, setShowGame3Popup] = useState(false);
   const [showGame4Popup, setShowGame4Popup] = useState(false);
   const [showGame5Popup, setShowGame5Popup] = useState(false);
+  const [showBonusPopup, setShowBonusPopup] = useState(false);
   
   // Admin mode state
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -30,6 +31,10 @@ const App = () => {
   // Team highlight state for score changes
   const [teamHighlights, setTeamHighlights] = useState({});
   const [showNineManPopup, setShowNineManPopup] = useState(false);
+  
+  // Team name editing state
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [editingTeamName, setEditingTeamName] = useState('');
 
   // Team data state (replaced useMemo with useState for persistence)
   const [teamData, setTeamData] = useState([]);
@@ -162,18 +167,37 @@ const App = () => {
     }
   };
 
-  // Function to randomly select players from likers data
+  // Function to randomly select players from mutuals data
   const getRandomPlayers = (count) => {
-    const shuffled = [...likersData].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count).map((liker, index) => ({
+    const shuffled = [...mutualsData].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count).map((mutual, index) => ({
       id: index + 1,
-      name: liker.name,
+      name: mutual.full_name || mutual.username,
       ranking: index + 1,
       score: Math.round(Math.random() * 10) / 10, // Random score rounded to one decimal place
-      profilePicUrl: liker.profile_pic_url,
+      profilePicUrl: mutual.profile_pic_url,
       isEmpty: false
     }));
   };
+
+  // Prevent body scrolling when any modal is open
+  useEffect(() => {
+    const isAnyModalOpen = showWelcomePopup || showGame1Popup || showGame2Popup || 
+                          showGame3Popup || showGame4Popup || showGame5Popup || showBonusPopup ||
+                          showPasswordPrompt || showPlayerModal || showNineManPopup;
+    
+    if (isAnyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    // Cleanup function to remove class when component unmounts
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [showWelcomePopup, showGame1Popup, showGame2Popup, showGame3Popup, 
+      showGame4Popup, showGame5Popup, showBonusPopup, showPasswordPrompt, showPlayerModal, showNineManPopup]);
 
   // Initialize team data on component mount
   useEffect(() => {
@@ -216,26 +240,31 @@ const App = () => {
           {
             teamId: 1,
             title: "Team 1",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 2,
-            title: "Team 2", 
+            title: "Team 2",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 3,
             title: "Team 3",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 4,
             title: "Team 4",
+            captainId: null,
             players: getRandomPlayers(5)
           },
           {
             teamId: 5,
             title: "Team 5",
+            captainId: null,
             players: getRandomPlayers(5)
           }
         ];
@@ -364,8 +393,8 @@ const App = () => {
       });
     });
     
-    // Filter likers data to exclude players already on teams
-    return likersData.filter(liker => !playersOnTeams.has(liker.name));
+    // Filter mutuals data to exclude players already on teams
+    return mutualsData.filter(mutual => !playersOnTeams.has(mutual.full_name || mutual.username));
   };
 
   // Remove player from team (replace with empty slot)
@@ -402,7 +431,7 @@ const App = () => {
         newPlayers[slotIndex] = {
           id: Date.now() + Math.random(), // Generate unique ID
           isEmpty: false,
-          name: playerData.name,
+          name: playerData.full_name || playerData.username || playerData.name,
           score: 0, // Start with 0 score
           profilePicUrl: playerData.profile_pic_url,
           ranking: 1 // Default ranking
@@ -479,7 +508,8 @@ const App = () => {
     
     teamMakerPlayers.forEach((player, index) => {
       if (player) {
-        message += `${gameNames[index]}: ${player.name}\n`;
+        const playerName = player.full_name || player.username || player.name || 'Unknown Player';
+        message += `${gameNames[index]}: ${playerName}\n`;
       }
     });
     
@@ -510,6 +540,70 @@ const App = () => {
     
     // For now, use email since we don't have phone number
     window.location.href = emailLink;
+  };
+
+  // Set team captain
+  const setCaptain = async (teamId, playerId) => {
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        return {
+          ...team,
+          captainId: playerId
+        };
+      }
+      return team;
+    });
+    
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+  };
+
+  // Update team name
+  const updateTeamName = async (teamId, newName) => {
+    const updatedData = teamData.map(team => {
+      if (team.teamId === teamId) {
+        return {
+          ...team,
+          title: newName.trim() || team.title // Fallback to current title if empty
+        };
+      }
+      return team;
+    });
+    
+    setTeamData(updatedData);
+    await syncScoresToSupabase(updatedData);
+  };
+
+  // Handle team name double-click to start editing
+  const handleTeamNameDoubleClick = (teamId, currentName) => {
+    if (isAdminMode) {
+      setEditingTeamId(teamId);
+      setEditingTeamName(currentName);
+    }
+  };
+
+  // Handle team name save
+  const handleTeamNameSave = async () => {
+    if (editingTeamId && editingTeamName.trim()) {
+      await updateTeamName(editingTeamId, editingTeamName);
+    }
+    setEditingTeamId(null);
+    setEditingTeamName('');
+  };
+
+  // Handle team name cancel
+  const handleTeamNameCancel = () => {
+    setEditingTeamId(null);
+    setEditingTeamName('');
+  };
+
+  // Handle team name key press
+  const handleTeamNameKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleTeamNameSave();
+    } else if (e.key === 'Escape') {
+      handleTeamNameCancel();
+    }
   };
 
   // Handle drag and drop reordering
@@ -552,7 +646,7 @@ const App = () => {
   };
 
   // Row titles for the left side
-  const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅"];
+  const rowTitles = ["Game 1 🏐", "Game 2 🍝", "Game 3 ♟️", "Game 4 ☕", "Game 5 🏅", "Shhh 🤫"];
 
   // Sort teams based on total scores and maintain player order within teams
   const sortedTeams = useMemo(() => {
@@ -583,15 +677,15 @@ const App = () => {
   // COMMENTED OUT - Fantasy mode temporarily disabled
   /*
   const fantasyData = useMemo(() => {
-    // Function to randomly select players from likers data (for fantasy draft)
+    // Function to randomly select players from mutuals data (for fantasy draft)
     const getRandomPlayers = (count) => {
-      const shuffled = [...likersData].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count).map((liker, index) => ({
+      const shuffled = [...mutualsData].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count).map((mutual, index) => ({
         id: index + 1,
-        name: liker.name,
+        name: mutual.full_name || mutual.username,
         ranking: index + 1,
         score: Math.random() * 2 + 3, // Random score between 3.0 and 5.0
-        profilePicUrl: liker.profile_pic_url
+        profilePicUrl: mutual.profile_pic_url
       }));
     };
 
@@ -867,7 +961,7 @@ const App = () => {
           <div className="game-popup">
             <div className="game-content">
               <div className="game5-image">
-                <img src="/images/nick.png" alt="Game 5 placeholder" className="game-image-img" />
+                <img src="/images/nick_as_baby.png" alt="Game 5 placeholder" className="game-image-img" />
               </div>
               <div className="game-text">
                 <p className="game-title">Game 5: Nick Trivia!</p>
@@ -885,6 +979,37 @@ const App = () => {
                   onClick={() => setShowGame5Popup(false)}
                 >
                   whatever, kid
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bonus Game Popup */}
+      {showBonusPopup && (
+        <div className="game-popup-overlay">
+          <div className="game-popup">
+            <div className="game-content">
+              <div className="bonus-image">
+                <img src="/images/sharepoint.png" alt="Bonus Game" className="game-image-img" />
+              </div>
+              <div className="game-text">
+                <p className="game-title">Bonus Game: Configure a file server</p>
+                <p className="game-description">
+                  Complete this challenge if you dare. If you can complete this, text me and Ethan Lee and we'll get u a job.
+                </p>
+                <p className="game-description">
+                  Configure an on-premise instance of SharePoint 2016 Server and expose its contents over the internet.
+                </p>
+                <p className="game-description">
+                  Nick should be provided crednetials to be able to access file contents and perform basic REST operations over the API.
+                </p>
+                <button 
+                  className="game-close-button"
+                  onClick={() => setShowBonusPopup(false)}
+                >
+                  see more details
                 </button>
               </div>
             </div>
@@ -1059,7 +1184,7 @@ const App = () => {
                                   {player.profile_pic_url ? (
                                     <img 
                                       src={player.profile_pic_url} 
-                                      alt={player.name}
+                                      alt={player.full_name || player.username || player.name || 'Player'}
                                       className="wizard-player-image"
                                       onError={(e) => {
                                         e.target.style.display = 'none';
@@ -1068,10 +1193,10 @@ const App = () => {
                                     />
                                   ) : null}
                                     <div className="wizard-player-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
-                                      {player.name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
+                                      {(player.full_name || player.username || player.name || 'Unknown').split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
                                     </div>
                                   </div>
-                                  <div className="wizard-player-name">{player.name}</div>
+                                  <div className="wizard-player-name">{player.full_name || player.username || player.name || 'Unknown Player'}</div>
                                   <button 
                                     className="wizard-remove-btn"
                                     onClick={() => handleTeamMakerPlayerRemove(index)}
@@ -1128,6 +1253,7 @@ const App = () => {
                     case 2: setShowGame3Popup(true); break;
                     case 3: setShowGame4Popup(true); break;
                     case 4: setShowGame5Popup(true); break;
+                    case 5: setShowBonusPopup(true); break;
                     default: break;
                   }
                 };
@@ -1151,7 +1277,36 @@ const App = () => {
               {sortedTeams.map((team) => {
                 return (
                   <div key={team.teamId} className={`team-column ${teamHighlights[team.teamId] ? `team-highlight-${teamHighlights[team.teamId]}` : ''}`}>
-                    <h2 className="team-title">{team.title}</h2>
+                    {editingTeamId === team.teamId ? (
+                      <input
+                        type="text"
+                        className="team-title-input"
+                        value={editingTeamName}
+                        onChange={(e) => setEditingTeamName(e.target.value)}
+                        onBlur={handleTeamNameSave}
+                        onKeyDown={handleTeamNameKeyPress}
+                        autoFocus
+                        style={{
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          border: '2px solid #007bff',
+                          borderRadius: '4px',
+                          padding: '8px',
+                          width: '100%',
+                          backgroundColor: '#f8f9fa'
+                        }}
+                      />
+                    ) : (
+                      <h2 
+                        className="team-title"
+                        onDoubleClick={() => handleTeamNameDoubleClick(team.teamId, team.title)}
+                        style={{ cursor: isAdminMode ? 'pointer' : 'default' }}
+                        title={isAdminMode ? 'Double-click to edit team name' : ''}
+                      >
+                        {team.title}
+                      </h2>
+                    )}
                     <div className="players-container">
                       {team.players.map((player, index) => (
                         <PlayerCard
@@ -1162,12 +1317,14 @@ const App = () => {
                           profilePicUrl={player.profilePicUrl}
                           isAdminMode={isAdminMode}
                           isEmpty={player.isEmpty}
+                          isCaptain={player.id === team.captainId}
                           playerId={player.id}
                           teamId={team.teamId}
                           playerIndex={index}
                           onScoreUpdate={(newScore) => updatePlayerScore(team.teamId, player.id, newScore)}
                           onRemove={() => handlePlayerRemove(team.teamId, player.id)}
                           onAdd={() => handlePlayerAdd(team.teamId, player.id)}
+                          onSetCaptain={() => setCaptain(team.teamId, player.id)}
                           onDragStart={() => {}}
                           onDragOver={() => {}}
                           onDrop={handlePlayerDrop}
@@ -1191,7 +1348,7 @@ const App = () => {
         isOpen={showPlayerModal}
         onSelect={currentMode === 'teammaker' ? handleTeamMakerPlayerAdd : handlePlayerSelect}
         onClose={handlePlayerModalClose}
-        availablePlayers={currentMode === 'teammaker' ? likersData : getAvailablePlayers()}
+        availablePlayers={currentMode === 'teammaker' ? mutualsData : getAvailablePlayers()}
       />
 
       {/* Floating Car Mode Button */}
