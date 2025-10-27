@@ -3,6 +3,8 @@ import './PlayerSelectionModal.css';
 
 const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCustomNameEntry, setShowCustomNameEntry] = useState(false);
+  const [customPlayerName, setCustomPlayerName] = useState('');
 
   // Filter players based on search term
   const filteredPlayers = useMemo(() => {
@@ -20,6 +22,8 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
   React.useEffect(() => {
     if (!isOpen) {
       setSearchTerm('');
+      setShowCustomNameEntry(false);
+      setCustomPlayerName('');
     }
   }, [isOpen]);
 
@@ -57,6 +61,28 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
     onSelect(player);
   };
 
+  const handleAddYourselfClick = () => {
+    setShowCustomNameEntry(true);
+  };
+
+  const handleAddCustomPlayer = () => {
+    if (customPlayerName.trim()) {
+      const customPlayer = {
+        full_name: customPlayerName.trim(),
+        username: customPlayerName.trim(),
+        name: customPlayerName.trim(),
+        profile_pic_url: null
+      };
+      onSelect(customPlayer);
+      onClose();
+    }
+  };
+
+  const handleBackToPlayerList = () => {
+    setShowCustomNameEntry(false);
+    setCustomPlayerName('');
+  };
+
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -75,69 +101,119 @@ const PlayerSelectionModal = ({ isOpen, onSelect, onClose, availablePlayers }) =
           </button>
         </div>
         
-        {/* Search Box */}
-        <div className="player-modal-search">
-          <input
-            type="text"
-            placeholder="Search players..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-            autoFocus
-          />
-        </div>
-        
-        <div className="player-modal-content">
-          {filteredPlayers.length === 0 ? (
-            <div className="no-players-message">
-              {searchTerm.trim() ? (
-                <>
-                  <p>No players found matching "{searchTerm}".</p>
-                  <p>Try a different search term.</p>
-                </>
-              ) : (
-                <>
-                  <p>No available players to add.</p>
-                  <p>All players are already on teams.</p>
-                </>
-              )}
+        {!showCustomNameEntry ? (
+          <>
+            {/* Search Box */}
+            <div className="player-modal-search">
+              <input
+                type="text"
+                placeholder="Search players..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+                autoFocus
+              />
             </div>
-          ) : (
-            <div className="players-grid">
-              {filteredPlayers.map((player, index) => {
-                const playerName = player.full_name || player.username || player.name;
-                return (
-                  <div
-                    key={`${playerName}-${index}`}
-                    className="player-option"
-                    onClick={() => handlePlayerClick(player)}
-                  >
-                    <div 
-                      className="player-option-avatar"
-                      style={{ backgroundColor: getBackgroundColor(playerName) }}
-                    >
-                      {player.profile_pic_url ? (
-                        <img 
-                          src={player.profile_pic_url} 
-                          alt={playerName}
-                          className="player-option-image"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className="player-option-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
-                        {getInitials(playerName)}
-                      </div>
-                    </div>
-                    <div className="player-option-name">{playerName}</div>
+            
+            <div className="player-modal-content">
+              <div className="players-grid">
+                {filteredPlayers.length === 0 ? (
+                  <div className="no-players-message" style={{ gridColumn: '1 / -1' }}>
+                    {searchTerm.trim() ? (
+                      <>
+                        <p>No players found matching "{searchTerm}".</p>
+                        <p>Try a different search term.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>No available players to add.</p>
+                        <p>All players are already on teams.</p>
+                      </>
+                    )}
                   </div>
-                );
-              })}
+                ) : (
+                  filteredPlayers.map((player, index) => {
+                    const playerName = player.full_name || player.username || player.name;
+                    return (
+                      <div
+                        key={`${playerName}-${index}`}
+                        className="player-option"
+                        onClick={() => handlePlayerClick(player)}
+                      >
+                        <div 
+                          className="player-option-avatar"
+                          style={{ backgroundColor: getBackgroundColor(playerName) }}
+                        >
+                          {player.profile_pic_url ? (
+                            <img 
+                              src={player.profile_pic_url} 
+                              alt={playerName}
+                              className="player-option-image"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div className="player-option-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
+                            {getInitials(playerName)}
+                          </div>
+                        </div>
+                        <div className="player-option-name">{playerName}</div>
+                      </div>
+                    );
+                  })
+                )}
+                {/* Add Yourself Option - Always visible at the end */}
+                <div
+                  className="player-option add-yourself-option"
+                  onClick={handleAddYourselfClick}
+                >
+                  <div 
+                    className="player-option-avatar"
+                    style={{ backgroundColor: '#6c757d' }}
+                  >
+                    <div className="player-option-initials">+</div>
+                  </div>
+                  <div className="player-option-name">No ig? Add yourself!</div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          /* Custom Name Entry Screen */
+          <div className="player-modal-content">
+            <div className="custom-name-entry">
+              <h3>Add Yourself</h3>
+              <p>Enter your name to add yourself as a player</p>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={customPlayerName}
+                onChange={(e) => setCustomPlayerName(e.target.value)}
+                className="custom-name-input"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddCustomPlayer();
+                  }
+                }}
+              />
+              <div className="custom-name-buttons">
+                <button className="back-button" onClick={handleBackToPlayerList}>
+                  Back
+                </button>
+                <button 
+                  className="add-player-button" 
+                  onClick={handleAddCustomPlayer}
+                  disabled={!customPlayerName.trim()}
+                >
+                  Add Player
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="player-modal-footer">
           <button className="cancel-button" onClick={onClose}>
