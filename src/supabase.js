@@ -18,13 +18,35 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('REACT_APP_SUPABASE_ANON_KEY=your-anon-key');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  realtime: {
-    params: {
-      eventsPerSecond: 2
+// Create client with proper error handling
+let supabase;
+try {
+  supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+    realtime: {
+      params: {
+        eventsPerSecond: 2
+      }
+    },
+    db: {
+      schema: 'public'
     }
-  },
-  db: {
-    schema: 'public'
-  }
-})
+  });
+} catch (error) {
+  console.error('❌ Error creating Supabase client:', error);
+  // Create a dummy client to prevent crashes
+  supabase = {
+    from: () => ({
+      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+      insert: () => Promise.resolve({ error: null }),
+      update: () => ({ eq: () => Promise.resolve({ error: null }) })
+    }),
+    channel: () => ({
+      on: () => ({
+        subscribe: () => {}
+      })
+    }),
+    removeAllChannels: () => {}
+  };
+}
+
+export { supabase };

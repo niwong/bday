@@ -5,6 +5,20 @@ import PlayerSelectionModal from './components/PlayerSelectionModal';
 import NineManGame from './components/NineManGame/NineManGame';
 import mutualsData from './mutuals.json';
 import { supabase } from './supabase';
+import { loadTeamsFromDatabase, getOrCreatePlayer } from './dbHelpers';
+import { 
+  updateTeamNameInDb, 
+  deleteTeamFromDb, 
+  approveDraftTeamInDb, 
+  deleteDraftTeamFromDb,
+  createDraftTeamInDb,
+  updatePlayerScoreInDb,
+  addPlayerToTeamInDb,
+  removePlayerFromTeamInDb,
+  setTeamCaptainInDb,
+  swapPlayerSlotsInDb,
+  movePlayerToSlotInDb
+} from './dbWriteHelpers';
 
 const App = () => {
   // State management for modes
@@ -316,6 +330,7 @@ const App = () => {
   }, [showWelcomePopup, showGame1Popup, showGame2Popup, showGame3Popup, 
       showGame4Popup, showGame5Popup, showBonusPopup, showPasswordPrompt, showPlayerModal, showNineManPopup]);
 
+
   // Initialize team data on component mount
   useEffect(() => {
     const initializeData = async () => {
@@ -325,7 +340,7 @@ const App = () => {
       let supabaseConnected = false;
       try {
         const { data: testData, error: testError } = await supabase
-          .from('scores')
+          .from('teams')
           .select('id')
           .limit(1);
         
@@ -333,7 +348,7 @@ const App = () => {
           console.error('❌ Supabase connection test failed:', testError);
           supabaseConnected = false;
         } else {
-          console.log('✅ Supabase connection test passed');
+          console.log('✅ Supabase connection test passed', testData);
           supabaseConnected = true;
         }
       } catch (err) {
@@ -341,42 +356,28 @@ const App = () => {
         supabaseConnected = false;
       }
       
-      // Try loading from Supabase first (only if connected)
-      let data = null;
-      let error = null;
+      console.log('🔌 Supabase connection status:', supabaseConnected);
       
-      if (supabaseConnected) {
-        const supabaseResult = await supabase
-          .from('scores')
-          .select('team_data, draft_teams')
-          .eq('id', 1)
-          .single();
-        
-        data = supabaseResult.data;
-        error = supabaseResult.error;
-        console.log('📊 Supabase query result:', { data, error });
+      // Load approved teams using new normalized schema
+      const approvedTeams = await loadTeamsFromDatabase('approved');
+      
+      if (approvedTeams.length > 0) {
+        console.log('📊 Loading approved teams from Supabase:', approvedTeams);
+        setTeamData(approvedTeams);
+        localStorage.setItem('birthday-olympics-scores', JSON.stringify(approvedTeams));
       } else {
-        console.log('📊 Skipping Supabase query - not connected');
-        console.log('📊 Starting with empty teams (Supabase not available)');
-        setTeamData([]);
-      }
-      
-      if (supabaseConnected && data && data.team_data && data.team_data.length > 0) {
-        console.log('📊 Loading team data from Supabase:', data.team_data);
-        setTeamData(data.team_data);
-        localStorage.setItem('birthday-olympics-scores', JSON.stringify(data.team_data));
-      } else if (supabaseConnected) {
-        console.log('📊 No team data found in Supabase, starting with empty teams');
+        console.log('📊 No approved teams found in Supabase');
         setTeamData([]);
       }
       
       // Load draft teams
-      if (supabaseConnected && data && data.draft_teams && data.draft_teams.length > 0) {
-        console.log('📊 Loading draft teams from Supabase:', data.draft_teams);
-        setDraftTeams(data.draft_teams);
-        localStorage.setItem('birthday-olympics-draft-teams', JSON.stringify(data.draft_teams));
+      const draftTeamsData = await loadTeamsFromDatabase('draft');
+      if (draftTeamsData.length > 0) {
+        console.log('📊 Loading draft teams from Supabase:', draftTeamsData);
+        setDraftTeams(draftTeamsData);
+        localStorage.setItem('birthday-olympics-draft-teams', JSON.stringify(draftTeamsData));
       } else {
-        console.log('📊 No draft teams found in Supabase, starting with empty draft teams');
+        console.log('📊 No draft teams found in Supabase');
         setDraftTeams([]);
       }
       
@@ -484,10 +485,40 @@ const App = () => {
     // Update local state immediately (instant UI)
     setTeamData(updatedData);
     
-    // Sync to Supabase (async, don't block UI)
-    syncScoresToSupabase(updatedData).catch(err => {
-      console.error('❌ Failed to sync score update to Supabase:', err);
-    });
+    // Update score in database
+    if (!currentPlayer) {
+      console.error('❌ Player not found in team:', { teamId, playerId });
+      return;
+    }
+    
+    if (!currentPlayer.teamPlayerId) {
+      console.error('❌ Cannot update score: missing teamPlayerId', { 
+        playerName: currentPlayer.name,
+        playerId,
+        teamId 
+      });
+      alert('Error: Cannot update player score (missing database reference). Please reload the page.');
+      return;
+    }
+    
+    try {
+      const roundedScore = Math.round(Math.max(0, Math.min(5, parseFloat(newScore) || 0)) * 100) / 100;
+      console.log('📝 Updating player score:', {
+        playerName: currentPlayer.name,
+        oldScore,
+        newScore: roundedScore,
+        teamPlayerId: currentPlayer.teamPlayerId
+      });
+      
+      await updatePlayerScoreInDb(currentPlayer.teamPlayerId, roundedScore);
+      console.log('✅ Successfully updated player score in database');
+    } catch (err) {
+      console.error('❌ Failed to update player score in database:', err);
+      alert('Failed to save score to database. The change will revert.');
+      // Reload from database to restore correct state
+      const reloadedTeams = await loadTeamsFromDatabase('approved');
+      setTeamData(reloadedTeams);
+    }
   };
 
   // Get available players (not currently on any team)
@@ -509,20 +540,30 @@ const App = () => {
 
   // Remove player from team (replace with empty slot)
   const removePlayerFromTeam = async (teamId, playerId) => {
+    const team = teamData.find(t => t.teamId === teamId);
+    const player = team?.players.find(p => p.id === playerId);
+    
+    if (!player || !player.teamPlayerId) {
+      console.error('Cannot remove player: missing teamPlayerId');
+      return;
+    }
+    
     const updatedData = teamData.map(team => {
       if (team.teamId === teamId) {
         return {
           ...team,
-          players: team.players.map(player => 
-            player.id === playerId 
+          players: team.players.map(p => 
+            p.id === playerId 
               ? { 
                   id: `empty-${Date.now()}-${Math.random()}`, 
+                  teamPlayerId: null,
                   isEmpty: true, 
                   name: '', 
                   score: 0,
-                  profilePicUrl: null
+                  profilePicUrl: null,
+                  gameSlot: p.gameSlot
                 }
-              : player
+              : p
           )
         };
       }
@@ -531,39 +572,61 @@ const App = () => {
     
     setTeamData(updatedData);
     try {
-      await syncScoresToSupabase(updatedData);
+      // Delete from database
+      await removePlayerFromTeamInDb(player.teamPlayerId);
     } catch (err) {
-      console.error('❌ Failed to sync player removal to Supabase:', err);
+      console.error('❌ Failed to remove player from database:', err);
+      alert('Failed to remove player. Please try again.');
     }
   };
 
   // Add player to team (fill empty slot)
   const addPlayerToTeam = async (teamId, slotIndex, playerData) => {
-    const updatedData = teamData.map(team => {
-      if (team.teamId === teamId) {
-        const newPlayers = [...team.players];
-        newPlayers[slotIndex] = {
-          id: Date.now() + Math.random(), // Generate unique ID
-          isEmpty: false,
-          name: playerData.full_name || playerData.username || playerData.name,
-          score: 0, // Start with 0 score
-          profilePicUrl: playerData.profile_pic_url,
-          ranking: 1 // Default ranking
-        };
-        
-        return {
-          ...team,
-          players: newPlayers
-        };
-      }
-      return team;
-    });
+    const team = teamData.find(t => t.teamId === teamId);
     
-    setTeamData(updatedData);
+    if (!team || !team.dbId) {
+      alert('Failed to add player: missing team database ID');
+      setShowPlayerModal(false);
+      setSelectedTeamForAdd(null);
+      setSelectedSlotIndex(null);
+      return;
+    }
+    
     try {
-      await syncScoresToSupabase(updatedData);
+      // Get or create player
+      const playerName = playerData.full_name || playerData.username || playerData.name;
+      const playerUuid = await getOrCreatePlayer(playerName, playerData.profile_pic_url);
+      
+      // Add player to team in database
+      const teamPlayerId = await addPlayerToTeamInDb(team.dbId, playerUuid, slotIndex);
+      
+      // Update local state
+      const updatedData = teamData.map(tuka => {
+        if (tuka.teamId === teamId) {
+          const newPlayers = [...tuka.players];
+          newPlayers[slotIndex] = {
+            id: playerUuid,
+            teamPlayerId,
+            isEmpty: false,
+            name: playerName,
+            score: 0,
+            profilePicUrl: playerData.profile_pic_url,
+            ranking: slotIndex + 1,
+            gameSlot: slotIndex
+          };
+          
+          return {
+            ...tuka,
+            players: newPlayers
+          };
+        }
+        return tuka;
+      });
+      
+      setTeamData(updatedData);
     } catch (err) {
-      console.error('❌ Failed to sync player addition to Supabase:', err);
+      console.error('❌ Failed to add player to database:', err);
+      alert('Failed to add player. Please try again.');
     }
     
     // Close modal and reset state
@@ -663,66 +726,98 @@ const App = () => {
       return;
     }
 
-    // Create draft team object
-    const draftTeam = {
-      id: `draft-${Date.now()}`,
-      title: `${teamName} (${teamCaptain})`,
-      submitterName: teamCaptain,
-      captainId: teamMakerCaptainId,
-      players: teamMakerPlayers.map((player, index) => ({
-        id: `draft-${Date.now()}-${index}`,
-        name: player ? (player.full_name || player.username || player.name || 'Unknown Player') : '',
-        ranking: index + 1,
-        score: 0,
-        profilePicUrl: player ? player.profile_pic_url : null,
-        isEmpty: !player
-      })),
-      status: 'pending',
-      timestamp: Date.now()
-    };
-
-    // Add to draft teams
-    const updatedDraftTeams = [...draftTeams, draftTeam];
-    setDraftTeams(updatedDraftTeams);
-    
-    // Sync to Supabase
     try {
-      await syncDraftTeamsToSupabase(updatedDraftTeams);
-    } catch (err) {
-      console.error('❌ Failed to sync draft team submission to Supabase:', err);
-      alert('Failed to submit team. Please try again.');
-      return;
-    }
+      // Prepare team data for database
+      const teamData = {
+        title: `${teamName} (${teamCaptain})`,
+        submitterName: teamCaptain,
+        captainIndex: teamMakerCaptainId,
+        players: teamMakerPlayers.map((player, index) => {
+          if (!player) {
+            return { name: '', isEmpty: true };
+          }
+          return {
+            name: player.full_name || player.username || player.name || 'Unknown Player',
+            profilePicUrl: player.profile_pic_url,
+            isEmpty: false
+          };
+        })
+      };
 
-    // Show success message
-    alert('Team submitted successfully! Nick will review it soon.');
-    
-    // Reset form and navigate back to Olympics mode
-    setTeamMakerPlayers([null, null, null, null, null]);
-    setTeamName('');
-    setTeamCaptain('');
-    setTeamMakerCaptainId(null);
-    setTeamMakerStep(1);
-    setCurrentMode('olympics');
+      // Create draft team in database
+      await createDraftTeamInDb(teamData);
+      
+      // Reload draft teams from database
+      const draftTeamsData = await loadTeamsFromDatabase('draft');
+      setDraftTeams(draftTeamsData);
+
+      // Show success message
+      alert('Team submitted successfully! Text nick so he can review the team.');
+      
+      // Reset form and navigate back to Olympics mode
+      setTeamMakerPlayers([null, null, null, null, null]);
+      setTeamName('');
+      setTeamCaptain('');
+      setTeamMakerCaptainId(null);
+      setTeamMakerStep(1);
+      setCurrentMode('olympics');
+    } catch (err) {
+      console.error('❌ Failed to submit draft team:', err);
+      alert('Failed to submit team. Please try again.');
+    }
   };
 
   // Set team captain
   const setCaptain = async (teamId, playerId) => {
-    const updatedData = teamData.map(team => {
-      if (team.teamId === teamId) {
+    const team = teamData.find(t => t.teamId === teamId);
+    
+    if (!team) {
+      console.error('❌ Team not found:', teamId);
+      alert('Error: Team not found. Please reload the page.');
+      return;
+    }
+    
+    if (!team.dbId) {
+      console.error('❌ Cannot set captain: missing team database ID', { teamId, teamTitle: team.title });
+      alert('Error: Cannot set captain (missing database reference). Please reload the page.');
+      return;
+    }
+    
+    const player = team.players.find(p => p.id === playerId && !p.isEmpty);
+    if (!player) {
+      console.error('❌ Player not found or is empty slot:', { teamId, playerId });
+      return;
+    }
+    
+    console.log('👑 Setting team captain:', {
+      teamTitle: team.title,
+      captainName: player.name,
+      teamDbId: team.dbId,
+      playerId
+    });
+    
+    const updatedData = teamData.map(t => {
+      if (t.teamId === teamId) {
         return {
-          ...team,
+          ...t,
           captainId: playerId
         };
       }
-      return team;
+      return t;
     });
     
     setTeamData(updatedData);
+    
     try {
-      await syncScoresToSupabase(updatedData);
+      // Update captain in database
+      await setTeamCaptainInDb(team.dbId, playerId);
+      console.log('✅ Successfully set captain in database');
     } catch (err) {
-      console.error('❌ Failed to sync captain change to Supabase:', err);
+      console.error('❌ Failed to set captain in database:', err);
+      alert('Failed to set captain. The change will revert.');
+      // Reload from database to restore correct state
+      const reloadedTeams = await loadTeamsFromDatabase('approved');
+      setTeamData(reloadedTeams);
     }
   };
 
@@ -740,9 +835,19 @@ const App = () => {
     
     setTeamData(updatedData);
     try {
-      await syncScoresToSupabase(updatedData);
+      // Find the team and get its database ID
+      const team = updatedData.find(t => t.teamId === teamId);
+      if (team && team.dbId) {
+        await updateTeamNameInDb(team.dbId, newName);
+      } else {
+        console.error('❌ Team not found or missing dbId');
+      }
     } catch (err) {
-      console.error('❌ Failed to sync team name change to Supabase:', err);
+      console.error('❌ Failed to update team name in Supabase:', err);
+      alert('Failed to update team name.Data will reload.');
+      // Reload from database
+      const reloadedTeams = await loadTeamsFromDatabase('approved');
+      setTeamData(reloadedTeams);
     }
   };
 
@@ -772,15 +877,24 @@ const App = () => {
   // Delete entire team
   const deleteTeam = async (teamId) => {
     if (window.confirm('Are you sure you want to delete this entire team? This action cannot be undone.')) {
-      const updatedData = teamData.filter(team => team.teamId !== teamId);
-      setTeamData(updatedData);
+      // Find the team to get its database ID
+      const team = teamData.find(t => t.teamId === teamId);
+      
+      if (!team || !team.dbId) {
+        alert('Failed to delete team: missing database ID');
+        return;
+      }
+      
       try {
-        await syncScoresToSupabase(updatedData);
+        // Delete from database first
+        await deleteTeamFromDb(team.dbId);
+        
+        // Update local state
+        const updatedData = teamData.filter(t => t.teamId !== teamId);
+        setTeamData(updatedData);
       } catch (err) {
-        console.error('❌ Failed to sync team deletion to Supabase:', err);
+        console.error('❌ Failed to delete team from database:', err);
         alert('Failed to delete team. Please try again.');
-        // Revert the local state change
-        setTeamData(teamData);
       }
     }
   };
@@ -792,48 +906,57 @@ const App = () => {
 
   // Handle approving a draft team
   const handleApproveDraftTeam = async (draftId) => {
-    const draftTeam = draftTeams.find(draft => draft.id === draftId);
-    if (!draftTeam) return;
-
-    // Create new team with next available ID
-    const newTeamId = Math.max(...teamData.map(t => t.teamId)) + 1;
-    const newTeam = {
-      teamId: newTeamId,
-      title: draftTeam.title,
-      captainId: draftTeam.players[draftTeam.captainId]?.id || null,
-      players: draftTeam.players
-    };
-
-    // Add to confirmed teams
-    const updatedTeamData = [...teamData, newTeam];
-    setTeamData(updatedTeamData);
-    try {
-      await syncScoresToSupabase(updatedTeamData);
-    } catch (err) {
-      console.error('❌ Failed to sync team approval to Supabase:', err);
-      alert('Failed to approve team. Please try again.');
+    const draftTeam = draftTeams.find(draft => draft.id === draftId || draft.teamId === draftId);
+    
+    if (!draftTeam) {
+      alert('Failed to approve team: team not found');
+      return;
+    }
+    
+    if (!draftTeam.dbId) {
+      alert('Failed to approve team: missing database ID');
       return;
     }
 
-    // Remove from draft teams
-    const updatedDraftTeams = draftTeams.filter(draft => draft.id !== draftId);
-    setDraftTeams(updatedDraftTeams);
     try {
-      await syncDraftTeamsToSupabase(updatedDraftTeams);
+      // Update team status in database from 'draft' to 'approved'
+      await approveDraftTeamInDb(draftTeam.dbId);
+      
+      // Reload teams from database to get fresh data
+      const [approvedTeams, draftTeamsData] = await Promise.all([
+        loadTeamsFromDatabase('approved'),
+        loadTeamsFromDatabase('draft')
+      ]);
+      
+      setTeamData(approvedTeams);
+      setDraftTeams(draftTeamsData);
+      
+      alert('Team approved successfully!');
     } catch (err) {
-      console.error('❌ Failed to sync draft team removal to Supabase:', err);
-      alert('Failed to remove draft team. Please try again.');
+      console.error('❌ Failed to approve draft team:', err);
+      alert('Failed to approve team. Please try again.');
     }
   };
 
   // Handle denying a draft team
   const handleDenyDraftTeam = async (draftId) => {
-    const updatedDraftTeams = draftTeams.filter(draft => draft.id !== draftId);
-    setDraftTeams(updatedDraftTeams);
+    const draftTeam = draftTeams.find(draft => draft.id === draftId);
+    if (!draftTeam || !draftTeam.dbId) {
+      alert('Failed to deny team: missing database ID');
+      return;
+    }
+
     try {
-      await syncDraftTeamsToSupabase(updatedDraftTeams);
+      // Delete from database
+      await deleteDraftTeamFromDb(draftTeam.dbId);
+      
+      // Update local state
+      const updatedDraftTeams = draftTeams.filter(draft => draft.id !== draftId);
+      setDraftTeams(updatedDraftTeams);
+      
+      alert('Draft team denied and removed.');
     } catch (err) {
-      console.error('❌ Failed to sync draft team denial to Supabase:', err);
+      console.error('❌ Failed to deny draft team:', err);
       alert('Failed to deny team. Please try again.');
     }
   };
@@ -862,13 +985,33 @@ const App = () => {
       return;
     }
 
+    // Get the original players BEFORE swapping (important for database operations)
+    const currentTeam = teamData.find(t => t.teamId === dragTeamId);
+    if (!currentTeam) {
+      console.error('❌ Team not found:', dragTeamId);
+      return;
+    }
+    
+    const draggedPlayer = currentTeam.players[dragIndex];
+    const targetPlayer = currentTeam.players[dropIndex];
+    
+    // Verify the dragged player has a teamPlayerId
+    if (!draggedPlayer || !draggedPlayer.teamPlayerId) {
+      console.error('❌ Cannot reorder: dragged player missing teamPlayerId', {
+        draggedPlayer: draggedPlayer ? { name: draggedPlayer.name, teamPlayerId: draggedPlayer.teamPlayerId } : null
+      });
+      alert('Cannot reorder players. Missing database references.');
+      return;
+    }
+    
+    // Check if target is an empty slot
+    const isTargetEmpty = !targetPlayer || targetPlayer.isEmpty || !targetPlayer.teamPlayerId;
+    const targetSlot = targetPlayer ? targetPlayer.gameSlot : dropIndex;
+
+    // Perform the UI swap
     const updatedData = teamData.map(team => {
       if (team.teamId === dragTeamId) {
         const newPlayers = [...team.players];
-        
-        // Perform a true swap: Player A takes Player B's spot, Player B takes Player A's spot
-        const draggedPlayer = newPlayers[dragIndex];
-        const targetPlayer = newPlayers[dropIndex];
         
         // Swap the players
         newPlayers[dragIndex] = targetPlayer;
@@ -883,10 +1026,34 @@ const App = () => {
     });
 
     setTeamData(updatedData);
+    
+    // Update database with the appropriate function
     try {
-      await syncScoresToSupabase(updatedData);
+      if (isTargetEmpty) {
+        // Moving to an empty slot - just move the player
+        console.log('🔄 Moving player to empty slot:', {
+          dragged: draggedPlayer.name,
+          targetSlot: targetSlot,
+          draggedTeamPlayerId: draggedPlayer.teamPlayerId
+        });
+        await swapPlayerSlotsInDb(draggedPlayer.teamPlayerId, null, targetSlot);
+      } else {
+        // Swapping two players
+        console.log('🔄 Swapping player slots:', {
+          dragged: draggedPlayer.name,
+          target: targetPlayer.name,
+          draggedTeamPlayerId: draggedPlayer.teamPlayerId,
+          targetTeamPlayerId: targetPlayer.teamPlayerId
+        });
+        await swapPlayerSlotsInDb(draggedPlayer.teamPlayerId, targetPlayer.teamPlayerId);
+      }
+      console.log('✅ Successfully updated player slots in database');
     } catch (err) {
-      console.error('❌ Failed to sync player reorder to Supabase:', err);
+      console.error('❌ Failed to reorder players in database:', err);
+      alert('Failed to reorder players. Changes will revert.');
+      // Reload from database
+      const reloadedTeams = await loadTeamsFromDatabase('approved');
+      setTeamData(reloadedTeams);
     }
   };
 
@@ -918,52 +1085,7 @@ const App = () => {
     }
   }, [teamData]);
 
-  // Memoized Fantasy Draft data - 10 teams, 6 rounds visible
-  // COMMENTED OUT - Fantasy mode temporarily disabled
-  /*
-  const fantasyData = useMemo(() => {
-    // Function to randomly select players from mutuals data (for fantasy draft)
-    const getRandomPlayers = (count) => {
-      const shuffled = [...mutualsData].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count).map((mutual, index) => ({
-        id: index + 1,
-        name: mutual.full_name || mutual.username,
-        ranking: index + 1,
-        score: Math.random() * 2 + 3, // Random score between 3.0 and 5.0
-        profilePicUrl: mutual.profile_pic_url
-      }));
-    };
-
-    const fantasyTeams = Array.from({ length: 10 }, (_, i) => ({
-      teamId: i + 1,
-      name: `Team ${i + 1}`,
-      players: []
-    }));
-
-    const fantasyRounds = Array.from({ length: 6 }, (_, roundIndex) => {
-      const roundNumber = roundIndex + 1;
-      const isSnakeRound = roundNumber % 2 === 0; // Even rounds go right to left
-      const teamOrder = isSnakeRound ? Array.from({ length: 10 }, (_, i) => 10 - i) : Array.from({ length: 10 }, (_, i) => i + 1);
-      
-      return {
-        roundNumber,
-        picks: teamOrder.map((teamId, pickIndex) => {
-          const pickNumber = roundNumber * 10 - (isSnakeRound ? pickIndex : 9 - pickIndex);
-          const randomPlayer = getRandomPlayers(1)[0];
-          return {
-            pickNumber,
-            teamId,
-            player: randomPlayer,
-            position: pickIndex < 2 ? 'QB' : pickIndex < 4 ? 'RB' : pickIndex < 6 ? 'WR' : pickIndex < 7 ? 'TE' : 'FLEX'
-          };
-        })
-      };
-    });
-
-    return { fantasyTeams, fantasyRounds };
-  }, []); // Empty dependency array means this only runs once
-  */
-
+  
   // Menu toggle function
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
