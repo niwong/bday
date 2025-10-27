@@ -208,7 +208,7 @@ export const updatePlayerScoreInDb = async (teamPlayerId, score) => {
  * Add player to team in database
  * @param {string} teamId - Team database ID
  * @param {string} playerId - Player database ID
- * @param {number} gameSlot - Game slot index (0-5)
+ * @param {number} gameSlot - Game slot index (0-4)
  */
 export const addPlayerToTeamInDb = async (teamId, playerId, gameSlot) => {
   try {
@@ -285,7 +285,7 @@ export const setTeamCaptainInDb = async (teamId, playerId) => {
 /**
  * Move a player to a specific slot (for handling empty slot targets)
  * @param {string} teamPlayerId - Team player record ID
- * @param {number} targetSlot - Target game slot (0-5)
+ * @param {number} targetSlot - Target game slot (0-4)
  */
 export const movePlayerToSlotInDb = async (teamPlayerId, targetSlot) => {
   try {
@@ -359,10 +359,10 @@ export const swapPlayerSlotsInDb = async (teamPlayerId1, teamPlayerId2, targetSl
     
     if (slotsError) throw slotsError;
     
-    // Find an unused slot (0-5) for temporary storage
+    // Find an unused slot (0-4) for temporary storage
     const usedSlots = new Set(teamSlots.map(s => s.game_slot));
     let tempSlot = null;
-    for (let i = 0; i <= 5; i++) {
+    for (let i = 0; i <= 4; i++) {
       if (!usedSlots.has(i)) {
         tempSlot = i;
         break;
@@ -371,7 +371,7 @@ export const swapPlayerSlotsInDb = async (teamPlayerId1, teamPlayerId2, targetSl
     
     // If all slots are used (shouldn't happen in normal operation, but handle it)
     if (tempSlot === null) {
-      // All 6 slots are filled, we need a different approach
+      // All 5 slots are filled, we need a different approach
       console.warn('⚠️ All slots filled, using alternative swap approach');
       
       // Get all team players and their slots

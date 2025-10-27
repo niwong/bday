@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS team_players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     player_id UUID REFERENCES players(id) ON DELETE SET NULL,
-    game_slot INTEGER NOT NULL CHECK (game_slot >= 0 AND game_slot <= 5), -- 0-5 for the 6 games
+    game_slot INTEGER NOT NULL CHECK (game_slot >= 0 AND game_slot <= 4), -- 0-4 for the 5 games
     score NUMERIC DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(team_id, game_slot), -- One player per game slot per team

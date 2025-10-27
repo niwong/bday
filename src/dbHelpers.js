@@ -57,9 +57,9 @@ export const loadTeamsFromDatabase = async (status) => {
         .filter(tp => tp.team_id === team.id)
         .sort((a, b) => a.game_slot - b.game_slot);
       
-      // Build players array (always 6 slots)
+      // Build players array (always 5 slots)
       const players = [];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 5; i++) {
         const teamPlayer = playersForTeam.find(tp => tp.game_slot === i);
         if (teamPlayer && teamPlayer.player) {
           const playerObj = {

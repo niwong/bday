@@ -1540,7 +1540,7 @@ const App = () => {
                     <p className="wizard-description">he ripped all of these profiles from instagram using AI</p>
                     
                     <div className="wizard-player-slots">
-                      {rowTitles.map((gameTitle, index) => {
+                      {rowTitles.slice(0, 5).map((gameTitle, index) => {
                         const player = teamMakerPlayers[index];
                         const gameEmoji = gameTitle.split(' ').pop(); // Get the emoji from the title
                         return (
