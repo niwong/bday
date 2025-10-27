@@ -45,11 +45,50 @@ const App = () => {
   const [teamCaptain, setTeamCaptain] = useState('');
   const [selectedGameSlot, setSelectedGameSlot] = useState(null);
   const [teamMakerStep, setTeamMakerStep] = useState(1); // 1 or 2
+  const [teamMakerCaptainId, setTeamMakerCaptainId] = useState(null);
+  
+  // Draft teams state
+  const [draftTeams, setDraftTeams] = useState([]);
 
   // Supabase sync functions
   const syncScoresToSupabase = async (scores) => {
     try {
       console.log('💾 Syncing scores to Supabase...', scores);
+      
+      // First, let's check if the record exists
+      const { data: existingData, error: fetchError } = await supabase
+        .from('scores')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      
+      if (fetchError) {
+        console.error('❌ Error fetching existing data:', fetchError);
+        
+        // If the record doesn't exist, create it first
+        if (fetchError.code === 'PGRST116') {
+          console.log('📝 Record with id=1 doesn\'t exist, creating it...');
+          const { error: insertError } = await supabase
+            .from('scores')
+            .insert({
+              id: 1,
+              team_data: scores,
+              draft_teams: [],
+              last_updated: new Date().toISOString()
+            });
+          
+          if (insertError) {
+            console.error('❌ Error creating record:', insertError);
+            throw insertError;
+          } else {
+            console.log('✅ Successfully created record with team data');
+            localStorage.setItem('birthday-olympics-scores', JSON.stringify(scores));
+            return;
+          }
+        } else {
+          throw fetchError;
+        }
+      }
       
       const { error } = await supabase
         .from('scores')
@@ -61,13 +100,103 @@ const App = () => {
       
       if (error) {
         console.error('❌ Error syncing to Supabase:', error);
+        throw error;
       } else {
         console.log('✅ Successfully synced to Supabase');
+        // Only save to localStorage after successful Supabase sync
+        localStorage.setItem('birthday-olympics-scores', JSON.stringify(scores));
       }
-      
-      localStorage.setItem('birthday-olympics-scores', JSON.stringify(scores));
     } catch (err) {
       console.error('❌ Sync error:', err);
+      throw err;
+    }
+  };
+
+  const syncDraftTeamsToSupabase = async (drafts) => {
+    try {
+      console.log('💾 Syncing draft teams to Supabase...', drafts);
+      console.log('💾 Draft teams data structure:', JSON.stringify(drafts, null, 2));
+      
+      // First, let's check if the record exists and what the current structure looks like
+      const { data: existingData, error: fetchError } = await supabase
+        .from('scores')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      
+      if (fetchError) {
+        console.error('❌ Error fetching existing data:', fetchError);
+        console.error('❌ Fetch error details:', JSON.stringify(fetchError, null, 2));
+        
+        // If the record doesn't exist, create it first
+        if (fetchError.code === 'PGRST116') {
+          console.log('📝 Record with id=1 doesn\'t exist, creating it...');
+          const { error: insertError } = await supabase
+            .from('scores')
+            .insert({
+              id: 1,
+              team_data: [],
+              draft_teams: drafts,
+              last_updated: new Date().toISOString()
+            });
+          
+          if (insertError) {
+            console.error('❌ Error creating record:', insertError);
+            throw insertError;
+          } else {
+            console.log('✅ Successfully created record with draft teams');
+            localStorage.setItem('birthday-olympics-draft-teams', JSON.stringify(drafts));
+            return;
+          }
+        } else {
+          throw fetchError;
+        }
+      } else {
+        console.log('📊 Existing data structure:', JSON.stringify(existingData, null, 2));
+      }
+      
+      const { error } = await supabase
+        .from('scores')
+        .update({ 
+          draft_teams: drafts,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', 1);
+      
+      if (error) {
+        console.error('❌ Error syncing draft teams to Supabase:', error);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
+        
+        // If the error is about the column not existing, try updating without draft_teams
+        if (error.message && error.message.includes('draft_teams')) {
+          console.log('⚠️ draft_teams column may not exist, trying alternative approach...');
+          const { error: altError } = await supabase
+            .from('scores')
+            .update({ 
+              last_updated: new Date().toISOString()
+            })
+            .eq('id', 1);
+          
+          if (altError) {
+            console.error('❌ Alternative update also failed:', altError);
+            throw error; // Throw original error
+          } else {
+            console.log('⚠️ Updated record without draft_teams column - data saved locally only');
+            localStorage.setItem('birthday-olympics-draft-teams', JSON.stringify(drafts));
+            return;
+          }
+        }
+        
+        throw error;
+      } else {
+        console.log('✅ Successfully synced draft teams to Supabase');
+        // Only save to localStorage after successful Supabase sync
+        localStorage.setItem('birthday-olympics-draft-teams', JSON.stringify(drafts));
+      }
+    } catch (err) {
+      console.error('❌ Draft teams sync error:', err);
+      console.error('❌ Error details:', JSON.stringify(err, null, 2));
+      throw err;
     }
   };
 
@@ -167,18 +296,6 @@ const App = () => {
     }
   };
 
-  // Function to randomly select players from mutuals data
-  const getRandomPlayers = (count) => {
-    const shuffled = [...mutualsData].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count).map((mutual, index) => ({
-      id: index + 1,
-      name: mutual.full_name || mutual.username,
-      ranking: index + 1,
-      score: Math.round(Math.random() * 10) / 10, // Random score rounded to one decimal place
-      profilePicUrl: mutual.profile_pic_url,
-      isEmpty: false
-    }));
-  };
 
   // Prevent body scrolling when any modal is open
   useEffect(() => {
@@ -205,6 +322,7 @@ const App = () => {
       console.log('🚀 Initializing app data...');
       
       // Test Supabase connection first
+      let supabaseConnected = false;
       try {
         const { data: testData, error: testError } = await supabase
           .from('scores')
@@ -213,63 +331,53 @@ const App = () => {
         
         if (testError) {
           console.error('❌ Supabase connection test failed:', testError);
-          return;
+          supabaseConnected = false;
         } else {
           console.log('✅ Supabase connection test passed');
+          supabaseConnected = true;
         }
       } catch (err) {
         console.error('❌ Supabase connection error:', err);
-        return;
+        supabaseConnected = false;
       }
       
-      // Try loading from Supabase first
-      const { data, error } = await supabase
-        .from('scores')
-        .select('team_data')
-        .eq('id', 1)
-        .single();
+      // Try loading from Supabase first (only if connected)
+      let data = null;
+      let error = null;
       
-      console.log('📊 Supabase query result:', { data, error });
+      if (supabaseConnected) {
+        const supabaseResult = await supabase
+          .from('scores')
+          .select('team_data, draft_teams')
+          .eq('id', 1)
+          .single();
+        
+        data = supabaseResult.data;
+        error = supabaseResult.error;
+        console.log('📊 Supabase query result:', { data, error });
+      } else {
+        console.log('📊 Skipping Supabase query - not connected');
+        console.log('📊 Starting with empty teams (Supabase not available)');
+        setTeamData([]);
+      }
       
-      if (data && data.team_data && data.team_data.length > 0) {
+      if (supabaseConnected && data && data.team_data && data.team_data.length > 0) {
+        console.log('📊 Loading team data from Supabase:', data.team_data);
         setTeamData(data.team_data);
         localStorage.setItem('birthday-olympics-scores', JSON.stringify(data.team_data));
+      } else if (supabaseConnected) {
+        console.log('📊 No team data found in Supabase, starting with empty teams');
+        setTeamData([]);
+      }
+      
+      // Load draft teams
+      if (supabaseConnected && data && data.draft_teams && data.draft_teams.length > 0) {
+        console.log('📊 Loading draft teams from Supabase:', data.draft_teams);
+        setDraftTeams(data.draft_teams);
+        localStorage.setItem('birthday-olympics-draft-teams', JSON.stringify(data.draft_teams));
       } else {
-        // Generate initial data if none exists
-        const initialData = [
-          {
-            teamId: 1,
-            title: "Team 1",
-            captainId: null,
-            players: getRandomPlayers(5)
-          },
-          {
-            teamId: 2,
-            title: "Team 2",
-            captainId: null,
-            players: getRandomPlayers(5)
-          },
-          {
-            teamId: 3,
-            title: "Team 3",
-            captainId: null,
-            players: getRandomPlayers(5)
-          },
-          {
-            teamId: 4,
-            title: "Team 4",
-            captainId: null,
-            players: getRandomPlayers(5)
-          },
-          {
-            teamId: 5,
-            title: "Team 5",
-            captainId: null,
-            players: getRandomPlayers(5)
-          }
-        ];
-        setTeamData(initialData);
-        await syncScoresToSupabase(initialData);
+        console.log('📊 No draft teams found in Supabase, starting with empty draft teams');
+        setDraftTeams([]);
       }
       
       // Set up realtime listener
@@ -377,7 +485,9 @@ const App = () => {
     setTeamData(updatedData);
     
     // Sync to Supabase (async, don't block UI)
-    syncScoresToSupabase(updatedData);
+    syncScoresToSupabase(updatedData).catch(err => {
+      console.error('❌ Failed to sync score update to Supabase:', err);
+    });
   };
 
   // Get available players (not currently on any team)
@@ -420,7 +530,11 @@ const App = () => {
     });
     
     setTeamData(updatedData);
-    await syncScoresToSupabase(updatedData);
+    try {
+      await syncScoresToSupabase(updatedData);
+    } catch (err) {
+      console.error('❌ Failed to sync player removal to Supabase:', err);
+    }
   };
 
   // Add player to team (fill empty slot)
@@ -446,7 +560,11 @@ const App = () => {
     });
     
     setTeamData(updatedData);
-    await syncScoresToSupabase(updatedData);
+    try {
+      await syncScoresToSupabase(updatedData);
+    } catch (err) {
+      console.error('❌ Failed to sync player addition to Supabase:', err);
+    }
     
     // Close modal and reset state
     setShowPlayerModal(false);
@@ -500,6 +618,16 @@ const App = () => {
     const newPlayers = [...teamMakerPlayers];
     newPlayers[gameSlotIndex] = null;
     setTeamMakerPlayers(newPlayers);
+    
+    // If the removed player was the captain, clear captain selection
+    if (teamMakerCaptainId === gameSlotIndex) {
+      setTeamMakerCaptainId(null);
+    }
+  };
+
+  // Handle captain selection in team maker mode
+  const handleTeamMakerCaptainSelect = (gameSlotIndex) => {
+    setTeamMakerCaptainId(gameSlotIndex);
   };
 
   const generateTeamMakerMessage = () => {
@@ -528,18 +656,54 @@ const App = () => {
     setTeamMakerStep(1);
   };
 
-  const handleTeamMakerSubmit = () => {
-    const message = generateTeamMakerMessage();
-    const encodedMessage = encodeURIComponent(message);
+  const handleTeamMakerSubmit = async () => {
+    // Validate that we have a captain selected
+    if (teamMakerCaptainId === null) {
+      alert('Please select a captain for your team');
+      return;
+    }
+
+    // Create draft team object
+    const draftTeam = {
+      id: `draft-${Date.now()}`,
+      title: `${teamName} (${teamCaptain})`,
+      submitterName: teamCaptain,
+      captainId: teamMakerCaptainId,
+      players: teamMakerPlayers.map((player, index) => ({
+        id: `draft-${Date.now()}-${index}`,
+        name: player ? (player.full_name || player.username || player.name || 'Unknown Player') : '',
+        ranking: index + 1,
+        score: 0,
+        profilePicUrl: player ? player.profile_pic_url : null,
+        isEmpty: !player
+      })),
+      status: 'pending',
+      timestamp: Date.now()
+    };
+
+    // Add to draft teams
+    const updatedDraftTeams = [...draftTeams, draftTeam];
+    setDraftTeams(updatedDraftTeams);
     
-    // Try SMS first (will need phone number)
-    const smsLink = `sms:+1PHONENUMBER?body=${encodedMessage}`;
+    // Sync to Supabase
+    try {
+      await syncDraftTeamsToSupabase(updatedDraftTeams);
+    } catch (err) {
+      console.error('❌ Failed to sync draft team submission to Supabase:', err);
+      alert('Failed to submit team. Please try again.');
+      return;
+    }
+
+    // Show success message
+    alert('Team submitted successfully! Nick will review it soon.');
     
-    // Fallback to email
-    const emailLink = `mailto:nick@nickwong.io?subject=Team Proposal&body=${encodedMessage}`;
-    
-    // For now, use email since we don't have phone number
-    window.location.href = emailLink;
+    // Reset form and navigate back to Olympics mode
+    setTeamMakerPlayers([null, null, null, null, null]);
+    setTeamName('');
+    setTeamCaptain('');
+    setTeamMakerCaptainId(null);
+    setTeamMakerStep(1);
+    setCurrentMode('olympics');
   };
 
   // Set team captain
@@ -555,7 +719,11 @@ const App = () => {
     });
     
     setTeamData(updatedData);
-    await syncScoresToSupabase(updatedData);
+    try {
+      await syncScoresToSupabase(updatedData);
+    } catch (err) {
+      console.error('❌ Failed to sync captain change to Supabase:', err);
+    }
   };
 
   // Update team name
@@ -571,7 +739,11 @@ const App = () => {
     });
     
     setTeamData(updatedData);
-    await syncScoresToSupabase(updatedData);
+    try {
+      await syncScoresToSupabase(updatedData);
+    } catch (err) {
+      console.error('❌ Failed to sync team name change to Supabase:', err);
+    }
   };
 
   // Handle team name double-click to start editing
@@ -595,6 +767,75 @@ const App = () => {
   const handleTeamNameCancel = () => {
     setEditingTeamId(null);
     setEditingTeamName('');
+  };
+
+  // Delete entire team
+  const deleteTeam = async (teamId) => {
+    if (window.confirm('Are you sure you want to delete this entire team? This action cannot be undone.')) {
+      const updatedData = teamData.filter(team => team.teamId !== teamId);
+      setTeamData(updatedData);
+      try {
+        await syncScoresToSupabase(updatedData);
+      } catch (err) {
+        console.error('❌ Failed to sync team deletion to Supabase:', err);
+        alert('Failed to delete team. Please try again.');
+        // Revert the local state change
+        setTeamData(teamData);
+      }
+    }
+  };
+
+  // Handle navigating to team maker mode
+  const handleNavigateToTeamMaker = () => {
+    setCurrentMode('teammaker');
+  };
+
+  // Handle approving a draft team
+  const handleApproveDraftTeam = async (draftId) => {
+    const draftTeam = draftTeams.find(draft => draft.id === draftId);
+    if (!draftTeam) return;
+
+    // Create new team with next available ID
+    const newTeamId = Math.max(...teamData.map(t => t.teamId)) + 1;
+    const newTeam = {
+      teamId: newTeamId,
+      title: draftTeam.title,
+      captainId: draftTeam.players[draftTeam.captainId]?.id || null,
+      players: draftTeam.players
+    };
+
+    // Add to confirmed teams
+    const updatedTeamData = [...teamData, newTeam];
+    setTeamData(updatedTeamData);
+    try {
+      await syncScoresToSupabase(updatedTeamData);
+    } catch (err) {
+      console.error('❌ Failed to sync team approval to Supabase:', err);
+      alert('Failed to approve team. Please try again.');
+      return;
+    }
+
+    // Remove from draft teams
+    const updatedDraftTeams = draftTeams.filter(draft => draft.id !== draftId);
+    setDraftTeams(updatedDraftTeams);
+    try {
+      await syncDraftTeamsToSupabase(updatedDraftTeams);
+    } catch (err) {
+      console.error('❌ Failed to sync draft team removal to Supabase:', err);
+      alert('Failed to remove draft team. Please try again.');
+    }
+  };
+
+  // Handle denying a draft team
+  const handleDenyDraftTeam = async (draftId) => {
+    const updatedDraftTeams = draftTeams.filter(draft => draft.id !== draftId);
+    setDraftTeams(updatedDraftTeams);
+    try {
+      await syncDraftTeamsToSupabase(updatedDraftTeams);
+    } catch (err) {
+      console.error('❌ Failed to sync draft team denial to Supabase:', err);
+      alert('Failed to deny team. Please try again.');
+    }
   };
 
   // Handle team name key press
@@ -642,7 +883,11 @@ const App = () => {
     });
 
     setTeamData(updatedData);
-    await syncScoresToSupabase(updatedData);
+    try {
+      await syncScoresToSupabase(updatedData);
+    } catch (err) {
+      console.error('❌ Failed to sync player reorder to Supabase:', err);
+    }
   };
 
   // Row titles for the left side
@@ -1192,11 +1437,21 @@ const App = () => {
                                       }}
                                     />
                                   ) : null}
-                                    <div className="wizard-player-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
-                                      {(player.full_name || player.username || player.name || 'Unknown').split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
-                                    </div>
+                                  <div className="wizard-player-initials" style={{ display: player.profile_pic_url ? 'none' : 'flex' }}>
+                                    {(player.full_name || player.username || player.name || 'Unknown').split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)}
                                   </div>
+                                </div>
                                   <div className="wizard-player-name">{player.full_name || player.username || player.name || 'Unknown Player'}</div>
+                                  
+                                  {/* Captain crown button */}
+                                  <button 
+                                    className={`wizard-crown-button ${teamMakerCaptainId === index ? 'selected' : ''}`}
+                                    onClick={() => handleTeamMakerCaptainSelect(index)}
+                                    title="Make captain"
+                                  >
+                                    👑
+                                  </button>
+                                  
                                   <button 
                                     className="wizard-remove-btn"
                                     onClick={() => handleTeamMakerPlayerRemove(index)}
@@ -1335,9 +1590,86 @@ const App = () => {
                       <span className="total-label">Total:</span>
                       <span className="total-score">{team.totalScore.toFixed(2)}/25.00</span>
                     </div>
+                    
+                    {/* Delete team button - only visible in admin mode */}
+                    {isAdminMode && (
+                      <button 
+                        className="delete-team-button"
+                        onClick={() => deleteTeam(team.teamId)}
+                        title="Delete entire team"
+                      >
+                        🗑️ Delete Team
+                      </button>
+                    )}
                   </div>
                 );
               })}
+              
+              {/* Draft teams - only visible in admin mode */}
+              {isAdminMode && draftTeams.map((draftTeam) => (
+                <div key={draftTeam.id} className="team-column draft">
+                  <div className="draft-badge">DRAFT</div>
+                  <h2 className="team-title">{draftTeam.title}</h2>
+                  <div className="players-container">
+                    {draftTeam.players.map((player, index) => (
+                      <PlayerCard
+                        key={player.id}
+                        name={player.name}
+                        ranking={player.ranking}
+                        score={player.score}
+                        profilePicUrl={player.profilePicUrl}
+                        isAdminMode={false}
+                        isEmpty={player.isEmpty}
+                        isCaptain={index === draftTeam.captainId}
+                        playerId={player.id}
+                        teamId={draftTeam.id}
+                        playerIndex={index}
+                        onScoreUpdate={() => {}}
+                        onRemove={() => {}}
+                        onAdd={() => {}}
+                        onSetCaptain={() => {}}
+                        onDragStart={() => {}}
+                        onDragOver={() => {}}
+                        onDrop={() => {}}
+                      />
+                    ))}
+                  </div>
+                  <div className="team-total">
+                    <span className="total-label">Total:</span>
+                    <span className="total-score">{draftTeam.players.reduce((sum, player) => sum + player.score, 0).toFixed(2)}/25.00</span>
+                  </div>
+                  <div className="draft-actions">
+                    <button 
+                      className="approve-button"
+                      onClick={() => handleApproveDraftTeam(draftTeam.id)}
+                      title="Approve team"
+                    >
+                      ✓
+                    </button>
+                    <button 
+                      className="deny-button"
+                      onClick={() => handleDenyDraftTeam(draftTeam.id)}
+                      title="Deny team"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Placeholder team column for creating new teams */}
+              <div className="team-column placeholder-team">
+                <div className="placeholder-team-content">
+                  <button 
+                    className="create-team-button"
+                    onClick={handleNavigateToTeamMaker}
+                    title="Click to go to team maker mode"
+                  >
+                    +
+                  </button>
+                  <p className="create-team-text">Click to create a new team</p>
+                </div>
+              </div>
             </div>
           </div>
         )}

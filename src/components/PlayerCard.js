@@ -4,6 +4,7 @@ import './PlayerCard.css';
 const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty, isCaptain, onScoreUpdate, onRemove, onAdd, onSetCaptain, onDragStart, onDragOver, onDrop, playerId, teamId, playerIndex }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(score.toString());
+  const [showCaptainModal, setShowCaptainModal] = useState(false);
 
   // Handle double-click to enable editing (admin mode only)
   const handleDoubleClick = () => {
@@ -26,6 +27,13 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
     e.stopPropagation();
     if (isAdminMode && isEmpty && onAdd) {
       onAdd();
+    }
+  };
+
+  // Handle empty card click in non-admin mode
+  const handleEmptyCardClick = () => {
+    if (!isAdminMode && isEmpty) {
+      setShowCaptainModal(true);
     }
   };
 
@@ -145,6 +153,7 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
     <div 
       className={`player-card ${isAdminMode ? 'admin-mode' : ''} ${isEmpty ? 'empty' : ''}`}
       onDoubleClick={handleDoubleClick}
+      onClick={handleEmptyCardClick}
       draggable={isAdminMode && !isEmpty}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -226,11 +235,28 @@ const PlayerCard = ({ name, ranking, score, profilePicUrl, isAdminMode, isEmpty,
             />
           ) : !isEmpty ? (
             <div className="player-score">{score.toFixed(2)}/5.00</div>
-          ) : (
+          ) : isAdminMode ? (
             <div className="player-score empty-score">Click + to add</div>
-          )}
+          ) : null}
         </div>
       </div>
+
+      {/* Captain Modal */}
+      {showCaptainModal && (
+        <div className="captain-modal-overlay" onClick={() => setShowCaptainModal(false)}>
+          <div className="captain-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="captain-modal-content">
+              <p>Ask the team captain (👑) to join the team</p>
+              <button 
+                className="captain-modal-close"
+                onClick={() => setShowCaptainModal(false)}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

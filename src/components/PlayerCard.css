@@ -50,7 +50,7 @@
   opacity: 0.7;
 }
 
-.player-card.empty:hover {
+.player-card.empty.admin-mode:hover {
   opacity: 1;
   border-color: #28a745;
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
@@ -294,4 +294,64 @@
     top: 6px;
     right: 6px;
   }
+}
+
+/* Captain Modal Styles */
+.captain-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.captain-modal {
+  background-color: white;
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 300px;
+  width: 90%;
+  position: relative;
+}
+
+.captain-modal-content {
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.captain-modal-content p {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.captain-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.captain-modal-close:hover {
+  background-color: #f0f0f0;
+  color: #333;
 }

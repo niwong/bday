@@ -116,8 +116,8 @@
 }
 
 .player-option:hover {
-  border-color: #ff6b6b;
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
   transform: translateY(-2px);
 }
 
