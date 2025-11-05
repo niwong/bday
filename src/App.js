@@ -1198,19 +1198,17 @@ const App = () => {
                 <img src="/images/volleyball.png" alt="Volleyball player" className="volleyball-image" />
               </div>
               <div className="game1-text">
-                <p className="game1-title">Game 1: Volleyball</p>
+                <p className="game1-title">Game 1: Performative Diving in Volleyball</p>
                 <p className="game1-description">
-                  I never would've expected this sport to be such a big part 
-                  of my adult life. But alas. Here we are. I just love it
-                  so much.
+                  Game 1 is all about the performative dive. Dolphin diving is a critical skill for any defensive player.
+                  But as I've gotten older, I've realized it's less about actually digging the ball but rather looking good in the process.
                 </p>
                 <p className="game1-description">
-                  The first game is a volleyball themed activity. It should
-                  be hard enough that even the vb players in the team
-                  will struggle.
+                  So let's see your best "performative" volleyball dolphin dive. We will record the player trying to dive as if they were playing
+                  volleyball, and we will then score them on the vibe and performative-ness of their move.
                 </p>
                 <p className="game1-description">
-                  Maybe we should drink...
+                  Showwww me what u gotttt!
                 </p>
                 <button 
                   className="game1-close-button"
