@@ -161,6 +161,104 @@
   word-break: break-word;
 }
 
+/* Add Yourself Option Styling */
+.add-yourself-option {
+  border: 2px dashed #6c757d;
+  opacity: 0.9;
+}
+
+.add-yourself-option:hover {
+  border-color: #5a6268;
+  opacity: 1;
+}
+
+/* Custom Name Entry Screen */
+.custom-name-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  gap: 1.5rem;
+}
+
+.custom-name-entry h3 {
+  color: #333333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.custom-name-entry p {
+  color: #666666;
+  font-size: 0.9rem;
+  margin: 0;
+  text-align: center;
+}
+
+.custom-name-input {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  background-color: #ffffff;
+}
+
+.custom-name-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.custom-name-input::placeholder {
+  color: #999999;
+}
+
+.custom-name-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.add-player-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-player-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.add-player-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.back-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #5a6268;
+}
+
 .player-modal-footer {
   padding: 1.5rem 2rem;
   border-top: 1px solid #e5e5e5;
